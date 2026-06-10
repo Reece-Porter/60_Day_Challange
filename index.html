@@ -898,6 +898,22 @@ document.getElementById("signOutBtn").addEventListener("click",async()=>{
 });
 
 // ── Auth State Observer ──
+async function migrateOldData(){
+  try{
+    // Only migrate if the user's new doc is empty
+    const userSnap=await getDoc(DATA_DOC);
+    if(userSnap.exists()&&Object.keys(userSnap.data()).length>0)return false;
+    // Read old shared doc
+    const oldSnap=await getDoc(doc(fsdb,'recomp','main'));
+    if(!oldSnap.exists())return false;
+    // Copy everything across
+    const oldData=oldSnap.data();
+    await setDoc(DATA_DOC,oldData);
+    _cache={...oldData};
+    return true;
+  }catch(e){console.warn('Migration skipped:',e);return false;}
+}
+
 onAuthStateChanged(auth,async user=>{
   if(!user){
     document.getElementById("authScreen").style.display="flex";
@@ -916,6 +932,11 @@ onAuthStateChanged(auth,async user=>{
   // Hide auth, show app
   document.getElementById("authScreen").style.display="none";
   document.getElementById("mainApp").style.display="block";
+  document.getElementById("app").innerHTML='<div class="loading">Loading your data…</div>';
+
+  // Migrate old data if this is a fresh account
+  const migrated=await migrateOldData();
+  if(migrated)console.log('✅ Data migrated from shared doc to your account');
 
   // Load and render
   const t=await load("theme");applyTheme(t==="dark");
