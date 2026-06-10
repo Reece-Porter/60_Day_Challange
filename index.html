@@ -7,10 +7,23 @@
 <style>
   :root{--paper:#F7F6F2;--card:#FFFFFF;--ink:#1B1B1A;--muted:#6F6E69;
     --line:#E5E3DC;--done:#2E7D54;--btn-bg:#1B1B1A;--btn-text:#FFFFFF;--box-empty:#C9C7BF;
-    --xp:#7C3AED;--xp-light:#EDE9FE;--water:#0EA5E9;}
+    --xp:#7C3AED;--xp-light:#EDE9FE;--water:#0EA5E9;--accent-raw:46,125,84;}
   body.dark{--paper:#15151A;--card:#1E1E24;--ink:#ECEAE3;--muted:#9C9A91;
     --line:#34343C;--done:#4CAF7D;--btn-bg:#ECEAE3;--btn-text:#15151A;--box-empty:#4A4A52;
     --xp:#A78BFA;--xp-light:#2D1F4F;--water:#38BDF8;}
+  /* ── Colour themes ── */
+  body.ct-ocean{--paper:#F0F7FF;--card:#FFFFFF;--line:#DAEAF7;--done:#0369A1;--box-empty:#BAD5EC;--xp:#0E7490;--xp-light:#CFFAFE;--accent-raw:3,105,161;}
+  body.ct-ocean.dark{--paper:#0C1A2E;--card:#102240;--line:#1A3558;--done:#38BDF8;--box-empty:#1E4068;--xp:#22D3EE;--xp-light:#0C3052;}
+  body.ct-sunset{--paper:#FFF7F0;--card:#FFFFFF;--line:#F5DFD0;--done:#C2410C;--box-empty:#E8C4A8;--xp:#B45309;--xp-light:#FEF3C7;--accent-raw:194,65,12;}
+  body.ct-sunset.dark{--paper:#1A0E06;--card:#2A1508;--line:#3D2010;--done:#FB923C;--box-empty:#4A2A10;--xp:#FCD34D;--xp-light:#2A1800;}
+  body.ct-violet{--paper:#F5F3FF;--card:#FFFFFF;--line:#E0D9FF;--done:#6D28D9;--box-empty:#C4B8F0;--xp:#7C3AED;--xp-light:#EDE9FE;--accent-raw:109,40,217;}
+  body.ct-violet.dark{--paper:#12062A;--card:#1C0F3A;--line:#2D1A55;--done:#A78BFA;--box-empty:#3D2070;--xp:#C4B5FD;--xp-light:#1E0D40;}
+  body.ct-rose{--paper:#FFF1F5;--card:#FFFFFF;--line:#F8D0DE;--done:#BE185D;--box-empty:#F0A0BF;--xp:#9D174D;--xp-light:#FCE7F3;--accent-raw:190,24,93;}
+  body.ct-rose.dark{--paper:#1A0610;--card:#2A0A1A;--line:#3D1028;--done:#F472B6;--box-empty:#501030;--xp:#F9A8D4;--xp-light:#280A18;}
+  body.ct-gold{--paper:#FFFBF0;--card:#FFFFFF;--line:#F0E5C8;--done:#92400E;--box-empty:#DFC490;--xp:#B45309;--xp-light:#FEF3C7;--accent-raw:146,64,14;}
+  body.ct-gold.dark{--paper:#1A1200;--card:#261A00;--line:#3A2800;--done:#FCD34D;--box-empty:#4A3600;--xp:#F59E0B;--xp-light:#2A1E00;}
+  body.ct-slate{--paper:#F1F5F9;--card:#FFFFFF;--line:#DCE4EE;--done:#334155;--box-empty:#A0B0C8;--xp:#475569;--xp-light:#E2E8F0;--accent-raw:51,65,85;}
+  body.ct-slate.dark{--paper:#0D1117;--card:#161B22;--line:#21262D;--done:#94A3B8;--box-empty:#2D3748;--xp:#A0AEC0;--xp-light:#1A2035;}
   *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
   body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
     background:var(--paper);color:var(--ink);line-height:1.45;transition:background .25s,color .25s;}
@@ -290,6 +303,13 @@
     background:none;border:1.5px dashed var(--done);border-radius:10px;padding:12px;cursor:pointer;margin-top:12px;}
   /* Macro goals editor */
   .macro-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+  .theme-swatches{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px;}
+  .theme-swatch{width:52px;cursor:pointer;border:none;background:none;padding:0;display:flex;flex-direction:column;align-items:center;gap:5px;}
+  .theme-swatch .sw-dot{width:38px;height:38px;border-radius:50%;border:3px solid transparent;transition:transform .15s,border-color .15s;position:relative;}
+  .theme-swatch.active .sw-dot{border-color:var(--ink);transform:scale(1.15);}
+  .theme-swatch .sw-dot::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;opacity:0;transition:opacity .15s;}
+  .theme-swatch.active .sw-dot::after{opacity:1;}
+  .theme-swatch .sw-label{font-size:10px;font-weight:600;color:var(--muted);letter-spacing:.04em;}
   .macro-field label{display:block;font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
   .macro-field input{width:100%;font-family:inherit;font-size:16px;font-weight:700;padding:10px 12px;
     border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);outline:none;}
@@ -714,6 +734,21 @@ document.getElementById("prevDay").addEventListener("click",()=>changeDay(-1));
 document.getElementById("nextDay").addEventListener("click",()=>changeDay(1));
 document.getElementById("photoInput").addEventListener("change",e=>{if(e.target.files&&e.target.files[0])handlePhoto(e.target.files[0]);e.target.value="";});
 const themeBtn=document.getElementById("themeBtn");
+const COLOR_THEMES=[
+  {id:"default",label:"Forest",dot:"#2E7D54"},
+  {id:"ocean",label:"Ocean",dot:"#0369A1"},
+  {id:"sunset",label:"Sunset",dot:"#C2410C"},
+  {id:"violet",label:"Violet",dot:"#6D28D9"},
+  {id:"rose",label:"Rose",dot:"#BE185D"},
+  {id:"gold",label:"Gold",dot:"#92400E"},
+  {id:"slate",label:"Slate",dot:"#334155"},
+];
+let colorTheme="default";
+function applyColorTheme(id){
+  colorTheme=id||"default";
+  COLOR_THEMES.forEach(t=>document.body.classList.remove("ct-"+t.id));
+  if(colorTheme!=="default")document.body.classList.add("ct-"+colorTheme);
+}
 function applyTheme(dark){document.body.classList.toggle("dark",dark);themeBtn.textContent=dark?"☀️ Light":"🌙 Dark";}
 themeBtn.addEventListener("click",()=>{const dark=!document.body.classList.contains("dark");applyTheme(dark);save("theme",dark?"dark":"light");});
 
@@ -762,6 +797,14 @@ function renderSettings(){
 
   body.innerHTML=`
     <div class="s-section">
+      <h3>Appearance</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Choose a colour theme for the page.</p>
+      <div class="theme-swatches">
+        ${COLOR_THEMES.map(t=>`<button class="theme-swatch${colorTheme===t.id?' active':''}" data-tid="${t.id}"><div class="sw-dot" style="background:${t.dot}"></div><div class="sw-label">${t.label}</div></button>`).join('')}
+      </div>
+    </div>
+
+    <div class="s-section">
       <h3>Workout Sessions</h3>
       <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Create your own sessions and assign them to days in the weekly plan.</p>
       ${sessListHtml}
@@ -797,6 +840,13 @@ function renderSettings(){
       <button class="s-save-btn" id="saveMacrosBtn">Save Nutrition Goals</button>
     </div>
   `;
+
+  // Colour theme swatches
+  body.querySelectorAll(".theme-swatch").forEach(btn=>btn.addEventListener("click",()=>{
+    applyColorTheme(btn.dataset.tid);
+    save("colorTheme",colorTheme);
+    body.querySelectorAll(".theme-swatch").forEach(b=>b.classList.toggle("active",b.dataset.tid===colorTheme));
+  }));
 
   // Session edit/delete
   body.querySelectorAll(".edit-sess-btn").forEach(btn=>btn.addEventListener("click",()=>{
@@ -897,7 +947,7 @@ document.getElementById("authSubmit").addEventListener("click",async()=>{
 });
 document.getElementById("authPassword").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("authSubmit").click();});
 document.getElementById("authGoogle").addEventListener("click",async()=>{authErr("");try{await signInWithPopup(auth,gProvider);}catch(e){authErr(e.code==='auth/popup-closed-by-user'?'Sign-in cancelled.':e.message);}});
-document.getElementById("signOutBtn").addEventListener("click",async()=>{await signOut(auth);_cache=null;DATA_DOC=null;dayState={session:null,checked:{},food:"",water:0};weights={};photoCache={};weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];macroGoals={...DEFAULT_MACRO_GOALS};xpData={total:0,days:{}};celebrated={};document.getElementById("mainApp").style.display="none";document.getElementById("authScreen").style.display="flex";document.getElementById("authEmail").value="";document.getElementById("authPassword").value="";});
+document.getElementById("signOutBtn").addEventListener("click",async()=>{await signOut(auth);_cache=null;DATA_DOC=null;dayState={session:null,checked:{},food:"",water:0};weights={};photoCache={};weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];macroGoals={...DEFAULT_MACRO_GOALS};xpData={total:0,days:{}};celebrated={};applyColorTheme("default");document.getElementById("mainApp").style.display="none";document.getElementById("authScreen").style.display="flex";document.getElementById("authEmail").value="";document.getElementById("authPassword").value="";});
 
 // ── Auth State ──
 async function migrateOldData(){try{const userSnap=await getDoc(DATA_DOC);if(userSnap.exists()&&Object.keys(userSnap.data()).length>0)return false;const oldSnap=await getDoc(doc(fsdb,'recomp','main'));if(!oldSnap.exists())return false;const oldData=oldSnap.data();await setDoc(DATA_DOC,oldData);_cache={...oldData};return true;}catch(e){return false;}}
@@ -911,6 +961,7 @@ onAuthStateChanged(auth,async user=>{
   document.getElementById("app").innerHTML='<div class="loading">Loading your data…</div>';
   await migrateOldData();
   const t=await load("theme");applyTheme(t==="dark");
+  const ct=await load("colorTheme");applyColorTheme(ct||"default");
   const w=await load("weights");weights=w||{};
   const wp=await load("weeklyPlan");if(wp)weeklyPlan=wp;
   const cs=await load("customSessions");
