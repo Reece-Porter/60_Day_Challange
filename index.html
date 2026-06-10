@@ -199,6 +199,7 @@
   <div class="top">
     <div class="eyebrow">Lock-in · recomp</div>
     <div class="top-right">
+      <span id="syncDot" title="Connecting…" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#F59E0B;flex-shrink:0;margin-top:2px;" ></span>
       <button class="theme-btn" id="themeBtn">🌙 Dark</button>
     </div>
   </div>
@@ -228,7 +229,22 @@
 <div id="app" class="loading">Loading…</div>
 <input type="file" accept="image/*" id="photoInput" style="display:none">
 
-<script>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAmRo2U0xUrAs_Mq7vxEGOrDkzt0etc-bA",
+  authDomain: "days-b31e6.firebaseapp.com",
+  projectId: "days-b31e6",
+  storageBucket: "days-b31e6.firebasestorage.app",
+  messagingSenderId: "345802828329",
+  appId: "1:345802828329:web:b53e1159daa29b95e74a38"
+};
+const fbApp = initializeApp(firebaseConfig);
+const fsdb = getFirestore(fbApp);
+const DATA_DOC = doc(fsdb, 'recomp', 'main');
+
 const START=new Date(2026,5,11), TARGET=new Date(2026,7,12), KEY="recomp:";
 
 const DAILY=[
@@ -331,13 +347,64 @@ function daysLeft(){return Math.max(0,Math.ceil((TARGET-midnight(realToday))/864
 function progDayOf(d){return Math.floor((midnight(d)-START)/86400000)+1;}
 function weekIndexOf(d){return Math.max(0,Math.floor((midnight(d)-START)/(7*86400000)));}
 
-// --- IndexedDB ---
+// --- IndexedDB (photos only — large base64 stays local) ---
 const DB_NAME="recompTrackerDB",STORE="kv";let _dbP=null;
 function openDB(){if(_dbP)return _dbP;_dbP=new Promise((res,rej)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>{if(!r.result.objectStoreNames.contains(STORE))r.result.createObjectStore(STORE);};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});return _dbP;}
 async function idbGet(k){const db=await openDB();return new Promise(res=>{const rq=db.transaction(STORE,"readonly").objectStore(STORE).get(k);rq.onsuccess=()=>res(rq.result===undefined?null:rq.result);rq.onerror=()=>res(null);});}
 async function idbSet(k,v){const db=await openDB();return new Promise(res=>{const tx=db.transaction(STORE,"readwrite");tx.objectStore(STORE).put(v,k);tx.oncomplete=()=>res(true);tx.onerror=()=>res(false);});}
-async function load(k){try{const v=await idbGet(KEY+k);return v?JSON.parse(v):null;}catch(e){return null;}}
-async function save(k,v){try{await idbSet(KEY+k,JSON.stringify(v));}catch(e){console.error("save",e);}}
+
+// --- Firestore cloud sync ---
+// All non-photo data lives in one Firestore document, loaded once into _cache.
+let _cache = null;
+let _syncStatus = 'loading'; // 'loading' | 'synced' | 'offline'
+
+function setSyncStatus(s){
+  _syncStatus=s;
+  const el=document.getElementById('syncDot');
+  if(!el)return;
+  el.title=s==='synced'?'Synced across devices':s==='offline'?'Offline — changes saved locally':'Connecting…';
+  el.style.background=s==='synced'?'#2E7D54':s==='offline'?'#e05252':'#F59E0B';
+}
+
+async function ensureCache(){
+  if(_cache)return;
+  try{
+    const snap=await getDoc(DATA_DOC);
+    _cache=snap.exists()?snap.data():{};
+    setSyncStatus('synced');
+  }catch(e){
+    console.warn('Firestore unavailable, running offline',e);
+    _cache={};
+    setSyncStatus('offline');
+  }
+}
+
+async function load(k){
+  if(k.startsWith('photo:')){
+    try{const v=await idbGet(KEY+k);return v?JSON.parse(v):null;}catch(e){return null;}
+  }
+  await ensureCache();
+  const v=_cache[k];
+  return v!==undefined?v:null;
+}
+
+async function save(k,v){
+  if(k.startsWith('photo:')){
+    try{await idbSet(KEY+k,JSON.stringify(v));}catch(e){}
+    return;
+  }
+  if(!_cache)_cache={};
+  _cache[k]=v;
+  setSyncStatus('loading');
+  try{
+    await setDoc(DATA_DOC,{[k]:v},{merge:true});
+    setSyncStatus('synced');
+  }catch(e){
+    console.error('Firestore write failed',e);
+    setSyncStatus('offline');
+    // Fallback: keep in memory, retry next save
+  }
+}
 
 // --- XP ---
 function getLevelInfo(xp){
