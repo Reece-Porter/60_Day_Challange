@@ -162,6 +162,12 @@
   .water-bar-wrap{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-bottom:10px;}
   .water-bar{height:100%;background:var(--water);border-radius:99px;transition:width .3s;}
   .water-btns{display:flex;gap:6px;flex-wrap:wrap;}
+  .empty-sess-banner{text-align:center;padding:28px 20px;border:2px dashed var(--line);border-radius:14px;margin-bottom:8px;}
+  .esb-icon{font-size:36px;margin-bottom:10px;}
+  .esb-text{font-size:16px;font-weight:700;margin-bottom:6px;}
+  .esb-sub{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:16px;}
+  .esb-btn{font-family:inherit;font-size:14px;font-weight:700;padding:10px 22px;background:var(--btn-bg);color:var(--btn-text);border:none;border-radius:10px;cursor:pointer;}
+  .esb-btn:hover{opacity:.85;}
   .water-btn{font-family:inherit;font-size:12px;font-weight:700;padding:7px 11px;
     border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);cursor:pointer;}
   .water-btn:hover{background:var(--line);}
@@ -562,8 +568,18 @@ function render(){
   function cardBody(id,content,def){const open=collapsed[id]===undefined?def:!collapsed[id];return `<div class="card-body${open?'':' hidden'}" id="cb-${id}">${content}</div>`;}
 
   // Gym session picker
-  let seg='<div class="seg">'+customSessions.map(s=>`<button class="${dayState.session===s.id?'active':''}" data-sess="${s.id}">${s.name}</button>`).join('')+'</div>';
-  seg+=`<div class="seg-hint">${dayState.session?'Tap any to switch':'Planned: '+(plannedSess?plannedSess.name:'Rest')+(planAbs?' + Abs':'')+'  — tap to load'}</div>`;
+  let seg='';
+  if(customSessions.length===0){
+    seg=`<div class="empty-sess-banner">
+      <div class="esb-icon">🏋️</div>
+      <div class="esb-text">No workout sessions yet</div>
+      <div class="esb-sub">Tap <strong>⚙ Settings</strong> in the top-right, then <strong>Workout Sessions → + New Session</strong> to build your first session.</div>
+      <button class="esb-btn" id="esbSettingsBtn">⚙ Open Settings</button>
+    </div>`;
+  } else {
+    seg='<div class="seg">'+customSessions.map(s=>`<button class="${dayState.session===s.id?'active':''}" data-sess="${s.id}">${s.name}</button>`).join('')+'</div>';
+    seg+=`<div class="seg-hint">${dayState.session?'Tap any to switch':'Planned: '+(plannedSess?plannedSess.name:'Rest')+(planAbs?' + Abs':'')+'  — tap to load'}</div>`;
+  }
   const train=sess?sess.items.map(it=>{const on=!!dayState.checked[it.id];
     const label=it.sets&&it.reps?`${it.sets} sets · ${it.reps} reps`:it.reps||'';
     return `<div class="item ${on?'done':''}" data-id="${it.id}"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="item-text"><div class="t">${it.name}</div>${label?`<div class="s">${label}</div>`:''}</div></div>`;
@@ -639,6 +655,7 @@ function render(){
 
   app.querySelectorAll(".item").forEach(el=>el.addEventListener("click",()=>toggle(el.dataset.id)));
   app.querySelectorAll(".seg button").forEach(el=>el.addEventListener("click",()=>pickSession(el.dataset.sess)));
+  document.getElementById("esbSettingsBtn")?.addEventListener("click",openSettings);
   document.getElementById("resetBtn").addEventListener("click",resetDay);
   document.getElementById("wLog").addEventListener("click",logWeight);
   document.getElementById("photoBtn").addEventListener("click",()=>document.getElementById("photoInput").click());
@@ -730,6 +747,8 @@ function renderSettings(){
     </div>
     ${editingSession&&editingSession.id===s.id?renderSessionEditor():''}
   `).join('');
+  const isNewSess=editingSession&&!customSessions.find(s=>s.id===editingSession.id);
+  const newSessEditorHtml=isNewSess?renderSessionEditor():'';
 
   // Abs list
   const absListHtml=customAbs.map((a,i)=>`
@@ -746,7 +765,8 @@ function renderSettings(){
       <h3>Workout Sessions</h3>
       <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Create your own sessions and assign them to days in the weekly plan.</p>
       ${sessListHtml}
-      <button class="new-item-btn" id="newSessBtn">+ New Session</button>
+      ${newSessEditorHtml}
+      ${!isNewSess?'<button class="new-item-btn" id="newSessBtn">+ New Session</button>':''}
     </div>
 
     <div class="s-section">
@@ -794,7 +814,7 @@ function renderSettings(){
   body.getElementById && null;
 
   // New session
-  body.querySelector("#newSessBtn").addEventListener("click",()=>{
+  body.querySelector("#newSessBtn")?.addEventListener("click",()=>{
     editingSession={id:uid(),name:"New Session",items:[]};
     renderSettings();
   });
@@ -893,7 +913,9 @@ onAuthStateChanged(auth,async user=>{
   const t=await load("theme");applyTheme(t==="dark");
   const w=await load("weights");weights=w||{};
   const wp=await load("weeklyPlan");if(wp)weeklyPlan=wp;
-  const cs=await load("customSessions");if(cs&&cs.length)customSessions=cs;
+  const cs=await load("customSessions");
+  if(cs!==null)customSessions=cs;
+  else if(Object.keys(_cache||{}).length===0)customSessions=[]; // brand new user — start empty
   const ca=await load("customAbs");if(ca&&ca.length)customAbs=ca;
   const mg=await load("macroGoals");if(mg)macroGoals={...DEFAULT_MACRO_GOALS,...mg};
   const xp=await load("xpData");if(xp)xpData=xp;
