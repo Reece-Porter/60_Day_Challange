@@ -144,7 +144,11 @@
   .cmp-img .ph{font-size:12px;color:var(--muted);text-align:center;padding:8px;}
   .cmp-cap{font-size:12px;font-weight:700;margin-top:6px;text-align:center;}
   .cmp-cap span{display:block;font-weight:500;color:var(--muted);font-size:11px;}
-  .photo-btn{margin-top:12px;width:100%;font-family:inherit;font-size:14px;font-weight:700;
+  .cmp-cap-edit{margin-top:6px;}
+  .cmp-cap-edit input{width:100%;font-family:inherit;font-size:12px;font-weight:700;text-align:center;border:none;border-bottom:1px dashed var(--line);background:none;color:var(--ink);padding:3px 4px;outline:none;}
+  .cmp-cap-edit input:focus{border-bottom-color:var(--done);}
+  .photo-btn-row{display:flex;gap:6px;margin-top:10px;}
+  .photo-btn{flex:1;font-family:inherit;font-size:13px;font-weight:700;
     color:var(--btn-text);background:var(--btn-bg);border:none;border-radius:10px;padding:11px;cursor:pointer;}
   /* Plan */
   .plan-today{background:var(--paper);border-radius:10px;padding:14px;margin-bottom:14px;}
@@ -186,6 +190,15 @@
   .water-btn:hover{background:var(--line);}
   .water-reset{font-family:inherit;font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;margin-left:auto;}
   /* Weight */
+  .w-start{background:var(--paper);border-radius:12px;padding:12px;margin-bottom:14px;}
+  .w-start-hdr{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:8px;}
+  .w-start-row{display:flex;gap:6px;align-items:center;}
+  .w-start-row input[type="date"],.w-start-row input[type="number"]{font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);outline:none;min-width:0;}
+  .w-start-row input[type="date"]{flex:1.4;}
+  .w-start-row input[type="number"]{flex:1;width:72px;}
+  .w-start-row button{font-family:inherit;font-size:13px;font-weight:700;color:var(--btn-text);background:var(--btn-bg);border:none;border-radius:8px;padding:7px 14px;cursor:pointer;white-space:nowrap;}
+  .w-start-set{font-size:12px;color:var(--done);font-weight:600;margin-top:6px;}
+  .w-divider{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin:0 0 10px;}
   .w-entry{display:flex;gap:8px;margin-bottom:14px;}
   .w-entry input{flex:1;font-family:inherit;font-size:16px;font-weight:600;padding:10px 12px;
     border:1px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);}
@@ -400,7 +413,8 @@
   </div>
 </header>
 <div id="app" class="loading">Loading…</div>
-<input type="file" accept="image/*" id="photoInput" style="display:none">
+<input type="file" accept="image/*" id="photoInput1" style="display:none">
+<input type="file" accept="image/*" id="photoInput2" style="display:none">
 </div>
 
 <script type="module">
@@ -489,6 +503,8 @@ const earliest=midnight(realToday)<START?midnight(realToday):START;
 let viewDate=new Date(realToday),viewKey=dkey(viewDate);
 let dayState={session:null,checked:{},food:"",water:0};
 let weights={},photoCache={};
+let startWeight={value:null,date:"",label:""};
+let day1PhotoLabel="Before";
 let weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));
 let customSessions=[...DEFAULT_SESSIONS];
 let customAbs=[...DEFAULT_ABS];
@@ -570,7 +586,7 @@ function render(){
   const absItems=customAbs;
   const absToday=customAbs.some(a=>dayState.checked[a.id]);
   const cmpLabel=viewKey===realKey?"Today":shortD(viewDate);
-  const photoLabel=viewKey===day1Key?"Add / change Day 1 photo":(viewKey===realKey?"Add / change today's photo":"Add / change this day's photo");
+  const photoLabel2=viewKey===realKey?"Upload today's photo":"Upload this day's photo";
 
   const DOW_LABELS=["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
   const planRows=DOW_LABELS.map((lbl,i)=>{
@@ -628,7 +644,18 @@ function render(){
     <div class="pg-col">
       <div class="card">
         ${cardHd('photos','Progress · Day 1 vs '+cmpLabel,'',true)}
-        ${cardBody('photos',`<div class="cmp"><div class="cmp-cell"><div class="cmp-img" id="img1"><span class="ph">No Day 1 photo yet</span></div><div class="cmp-cap">Day 1<span>11 Jun</span></div></div><div class="cmp-cell"><div class="cmp-img" id="img2"><span class="ph">No photo</span></div><div class="cmp-cap">${cmpLabel}<span>${pd<1?'before start':'Day '+pd}</span></div></div></div><button class="photo-btn" id="photoBtn">${photoLabel}</button>`,true)}
+        ${cardBody('photos',`<div class="cmp">
+          <div class="cmp-cell">
+            <div class="cmp-img" id="img1"><span class="ph">No before photo yet</span></div>
+            <div class="cmp-cap-edit"><input id="day1LabelInput" value="${esc(day1PhotoLabel)}" placeholder="e.g. Before — 1 Jun" maxlength="30"></div>
+            <button class="photo-btn" id="photoBtn1">Upload before photo</button>
+          </div>
+          <div class="cmp-cell">
+            <div class="cmp-img" id="img2"><span class="ph">No photo</span></div>
+            <div class="cmp-cap">${cmpLabel}<span>${pd<1?'before start':'Day '+pd}</span></div>
+            <button class="photo-btn" id="photoBtn2">${photoLabel2}</button>
+          </div>
+        </div>`,true)}
       </div>
       <div class="card">
         ${cardHd('daily','Every day · non-negotiables',dailyDone+'/'+DAILY.length,true)}
@@ -666,7 +693,19 @@ function render(){
   <div class="pg-full">
     <div class="card">
       ${cardHd('weight','Weight','',true)}
-      ${cardBody('weight',`<div class="w-entry"><input id="wInput" type="number" inputmode="decimal" step="0.1" placeholder="Weight kg"><button id="wLog">Log</button></div><div id="wBody"></div>`,true)}
+      ${cardBody('weight',`
+        <div class="w-start">
+          <div class="w-start-hdr">Starting weight <span style="text-transform:none;letter-spacing:0;font-weight:500">(enter your weight before you started)</span></div>
+          <div class="w-start-row">
+            <input type="date" id="swDate" value="${esc(startWeight.date||'')}" max="${realKey}">
+            <input type="number" id="swValue" inputmode="decimal" step="0.1" placeholder="kg" value="${startWeight.value!=null?startWeight.value:''}">
+            <button id="swSave">Set</button>
+          </div>
+          ${startWeight.value!=null?`<div class="w-start-set">✓ ${startWeight.value} kg · ${startWeight.date?new Date(startWeight.date+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):''}</div>`:''}
+        </div>
+        <div class="w-divider">Log daily weight</div>
+        <div class="w-entry"><input id="wInput" type="number" inputmode="decimal" step="0.1" placeholder="Today's weight kg"><button id="wLog">Log</button></div>
+        <div id="wBody"></div>`,true)}
     </div>
   </div>
   <div class="quote-card" id="quoteCard"></div>
@@ -678,7 +717,18 @@ function render(){
   document.getElementById("esbSettingsBtn")?.addEventListener("click",openSettings);
   document.getElementById("resetBtn").addEventListener("click",resetDay);
   document.getElementById("wLog").addEventListener("click",logWeight);
-  document.getElementById("photoBtn").addEventListener("click",()=>document.getElementById("photoInput").click());
+  document.getElementById("photoBtn1").addEventListener("click",()=>document.getElementById("photoInput1").click());
+  document.getElementById("photoBtn2").addEventListener("click",()=>document.getElementById("photoInput2").click());
+  document.getElementById("day1LabelInput").addEventListener("change",e=>{day1PhotoLabel=e.target.value||"Before";save("day1PhotoLabel",day1PhotoLabel);});
+  document.getElementById("swSave").addEventListener("click",()=>{
+    const d=document.getElementById("swDate").value;
+    const v=parseFloat(document.getElementById("swValue").value);
+    if(isNaN(v)||v<=0){alert("Enter a valid weight.");return;}
+    startWeight={value:Math.round(v*10)/10,date:d||realKey,label:""};
+    save("startWeight",startWeight);renderWeight();
+    document.getElementById("swSave").textContent="Saved ✓";
+    setTimeout(()=>{const b=document.getElementById("swSave");if(b)b.textContent="Set";},1500);
+  });
   app.querySelectorAll(".card-hd").forEach(hd=>{hd.addEventListener("click",()=>{const id=hd.dataset.card;const body=document.getElementById("cb-"+id);const nowOpen=hd.classList.contains("open");hd.classList.toggle("open",!nowOpen);body.classList.toggle("hidden",nowOpen);collapsed[id]=nowOpen;});});
   document.getElementById("planEditToggle").addEventListener("click",()=>{planEditorOpen=!planEditorOpen;document.getElementById("planEditor").classList.toggle("open",planEditorOpen);document.getElementById("planEditToggle").textContent=planEditorOpen?'▲ Hide schedule':'▼ Edit weekly schedule';});
   app.querySelectorAll(".plan-sel").forEach(el=>el.addEventListener("change",e=>{const dow=+e.target.dataset.dow;if(!weeklyPlan[dow])weeklyPlan[dow]={session:"rest",abs:false};weeklyPlan[dow].session=e.target.value;save("weeklyPlan",weeklyPlan);refreshPlanToday();}));
@@ -704,12 +754,35 @@ function refreshPlanToday(){
 }
 function itemHtml(it){const on=!!dayState.checked[it.id];return `<div class="item ${on?'done':''}" data-id="${it.id}"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="item-text"><div class="t">${it.t}</div>${it.s?`<div class="s">${it.s}</div>`:''}</div></div>`;}
 
+const DAY1_PHOTO_KEY="__day1__";
 async function ensurePhoto(k){if(photoCache[k]!==undefined)return;const r=await load("photo:"+k);photoCache[k]=r||null;}
-async function renderPhotos(){await ensurePhoto(day1Key);await ensurePhoto(viewKey);const c1=document.getElementById("img1"),c2=document.getElementById("img2");if(c1)c1.innerHTML=photoCache[day1Key]?`<img src="${photoCache[day1Key]}">`:'<span class="ph">No Day 1 photo yet</span>';if(c2)c2.innerHTML=photoCache[viewKey]?`<img src="${photoCache[viewKey]}">`:'<span class="ph">No photo — tap below</span>';}
-function handlePhoto(file){const reader=new FileReader();reader.onload=e=>{const img=new Image();img.onload=()=>{const max=800;let w=img.width,h=img.height;if(w>h&&w>max){h=Math.round(h*max/w);w=max;}else if(h>=w&&h>max){w=Math.round(w*max/h);h=max;}const cv=document.createElement("canvas");cv.width=w;cv.height=h;cv.getContext("2d").drawImage(img,0,0,w,h);const data=cv.toDataURL("image/jpeg",0.7);photoCache[viewKey]=data;save("photo:"+viewKey,data);renderPhotos();};img.src=e.target.result;};reader.readAsDataURL(file);}
+async function renderPhotos(){
+  await ensurePhoto(DAY1_PHOTO_KEY);await ensurePhoto(viewKey);
+  const c1=document.getElementById("img1"),c2=document.getElementById("img2");
+  if(c1)c1.innerHTML=photoCache[DAY1_PHOTO_KEY]?`<img src="${photoCache[DAY1_PHOTO_KEY]}">`:'<span class="ph">No before photo yet</span>';
+  if(c2)c2.innerHTML=photoCache[viewKey]?`<img src="${photoCache[viewKey]}">`:'<span class="ph">No photo — tap button below</span>';
+}
+function resizeAndSave(file,key,onDone){const reader=new FileReader();reader.onload=e=>{const img=new Image();img.onload=()=>{const max=800;let w=img.width,h=img.height;if(w>h&&w>max){h=Math.round(h*max/w);w=max;}else if(h>=w&&h>max){w=Math.round(w*max/h);h=max;}const cv=document.createElement("canvas");cv.width=w;cv.height=h;cv.getContext("2d").drawImage(img,0,0,w,h);const data=cv.toDataURL("image/jpeg",0.7);photoCache[key]=data;save("photo:"+key,data);onDone();};img.src=e.target.result;};reader.readAsDataURL(file);}
+function handlePhoto1(file){resizeAndSave(file,DAY1_PHOTO_KEY,renderPhotos);}
+function handlePhoto2(file){resizeAndSave(file,viewKey,renderPhotos);}
 
 function buildWeightChart(entries){const W=300,H=140,PAD={t:18,r:14,b:28,l:44};const cw=W-PAD.l-PAD.r,ch=H-PAD.t-PAD.b;const vals=entries.map(e=>e[1]);const mn=Math.min(...vals),mx=Math.max(...vals),rng=(mx-mn)||1;const xOf=i=>PAD.l+(entries.length<2?cw/2:(i/(entries.length-1))*cw);const yOf=v=>PAD.t+ch-((v-mn)/rng)*ch;let yAxis='';for(let i=0;i<=3;i++){const v=mn+(rng*i/3),y=yOf(v);yAxis+=`<line x1="${PAD.l}" y1="${y.toFixed(1)}" x2="${PAD.l+cw}" y2="${y.toFixed(1)}" stroke="currentColor" stroke-width=".5" opacity=".12"/><text x="${PAD.l-6}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="9.5" fill="currentColor" opacity=".55">${v.toFixed(1)}</text>`;}let xAxis='';const xi=new Set([0]);if(entries.length>1)xi.add(entries.length-1);if(entries.length>2)xi.add(Math.floor((entries.length-1)/2));xi.forEach(i=>{const d=new Date(entries[i][0]+'T00:00:00');xAxis+=`<text x="${xOf(i).toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="9.5" fill="currentColor" opacity=".55">${d.toLocaleDateString(undefined,{day:'numeric',month:'short'})}</text>`;});const linePts=entries.map((e,i)=>`${xOf(i).toFixed(1)},${yOf(e[1]).toFixed(1)}`).join(' ');const last=entries.length-1;const area=entries.length>=2?`<polygon points="${xOf(0).toFixed(1)},${(PAD.t+ch).toFixed(1)} ${linePts} ${xOf(last).toFixed(1)},${(PAD.t+ch).toFixed(1)}" fill="#2E7D54" opacity=".1"/>`:'';const line=entries.length>=2?`<polyline points="${linePts}" fill="none" stroke="#2E7D54" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`:'';let circles='';entries.forEach((e,i)=>{const x=xOf(i),y=yOf(e[1]),here=e[0]===viewKey;circles+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${here?5:3.5}" fill="${here?'#2E7D54':'var(--card)'}" stroke="#2E7D54" stroke-width="1.8"/>`;if(here||entries.length<=6)circles+=`<text x="${x.toFixed(1)}" y="${(y-10).toFixed(1)}" text-anchor="middle" font-size="9" fill="currentColor" opacity="${here?.9:.55}" font-weight="${here?700:400}">${e[1]}</text>`;});return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;color:var(--ink)">${yAxis}${area}${line}${circles}${xAxis}</svg>`;}
-function renderWeight(){const body=document.getElementById("wBody");if(!body)return;const entries=Object.entries(weights).sort((a,b)=>a[0]<b[0]?-1:1);if(!entries.length){body.innerHTML='<div class="w-empty">Log your weight to set your start point and trend.</div>';return;}const start=entries[0][1],latest=entries[entries.length-1][1],diff=+(latest-start).toFixed(1);const cls=diff<=0?'down':'up',sign=diff>0?'+':'';let html=`<div class="w-stats"><div class="w-stat"><div class="l">Start</div><div class="v">${start} kg</div></div><div class="w-stat"><div class="l">Latest</div><div class="v">${latest} kg</div></div><div class="w-stat"><div class="l">Change</div><div class="v ${cls}">${sign}${diff} kg</div></div></div>`;if(entries.length>=2){html+=`<div class="w-chart">${buildWeightChart(entries)}</div>`;const prev=entries[entries.length-2],curr=entries[entries.length-1];const d=+(curr[1]-prev[1]).toFixed(2),s2=d>0?'+':'',c2=d<=0?'neg':'pos';const days=Math.round((new Date(curr[0])-new Date(prev[0]+'T00:00:00'))/86400000);html+=`<div class="w-diff"><span class="label">vs ${days===1?'yesterday':`${days} days ago`} (${shortD(new Date(prev[0]+'T00:00:00'))})</span><span class="val ${c2}">${s2}${d} kg</span></div>`;}else html+='<div class="w-empty" style="margin-bottom:10px">One more entry and your chart appears.</div>';body.innerHTML=html;}
+function renderWeight(){const body=document.getElementById("wBody");if(!body)return;
+  // Build entries: startWeight (if set) + daily logs, deduplicated by date (daily log wins if same date)
+  const daily=Object.entries(weights).sort((a,b)=>a[0]<b[0]?-1:1);
+  let entries=[...daily];
+  if(startWeight.value!=null){
+    const sd=startWeight.date||'0000-00-00';
+    if(!weights[sd])entries=[...[[sd,startWeight.value]],...daily].sort((a,b)=>a[0]<b[0]?-1:1);
+  }
+  if(!entries.length){body.innerHTML='<div class="w-empty">Log your weight above or set a starting weight to begin tracking your trend.</div>';return;}
+  const first=entries[0][1],latest=entries[entries.length-1][1],diff=+(latest-first).toFixed(1);
+  const cls=diff<=0?'down':'up',sign=diff>0?'+':'';
+  let html=`<div class="w-stats"><div class="w-stat"><div class="l">Start</div><div class="v">${first} kg</div></div><div class="w-stat"><div class="l">Latest</div><div class="v">${latest} kg</div></div><div class="w-stat"><div class="l">Change</div><div class="v ${cls}">${sign}${diff} kg</div></div></div>`;
+  if(entries.length>=2){html+=`<div class="w-chart">${buildWeightChart(entries)}</div>`;const prev=entries[entries.length-2],curr=entries[entries.length-1];const d=+(curr[1]-prev[1]).toFixed(2),s2=d>0?'+':'',c2=d<=0?'neg':'pos';const days=Math.round((new Date(curr[0])-new Date(prev[0]+'T00:00:00'))/86400000);html+=`<div class="w-diff"><span class="label">vs ${days===1?'yesterday':`${days} days ago`} (${shortD(new Date(prev[0]+'T00:00:00'))})</span><span class="val ${c2}">${s2}${d} kg</span></div>`;}
+  else html+='<div class="w-empty" style="margin-bottom:10px">One more entry and your chart appears.</div>';
+  body.innerHTML=html;
+}
 function renderQuote(){const el=document.getElementById("quoteCard");if(!el)return;const seed=realToday.getFullYear()*10000+((realToday.getMonth()+1)*100)+realToday.getDate();const q=QUOTES[seed%QUOTES.length];el.innerHTML=`<div class="qc-label">Quote of the day</div><div class="qc-text">"${q}"</div><div class="qc-warning">⚠️ Don't let future-you down. Every day you skip makes the next one harder — stay locked in or live with the regret.</div>`;}
 function pad2(n){return String(Math.floor(n)).padStart(2,'0');}
 function tickTimers(){const now=new Date();const mid=new Date(now);mid.setHours(24,0,0,0);let r=Math.max(0,mid-now);const dh=Math.floor(r/3600000);r-=dh*3600000;const dm=Math.floor(r/60000);r-=dm*60000;const ds=Math.floor(r/1000);const td=document.getElementById("timerDay");if(td)td.textContent=pad2(dh)+':'+pad2(dm)+':'+pad2(ds);let r2=Math.max(0,TARGET-now);const tdays=Math.floor(r2/86400000);r2-=tdays*86400000;const th=Math.floor(r2/3600000);r2-=th*3600000;const tm=Math.floor(r2/60000);r2-=tm*60000;const ts=Math.floor(r2/1000);const tt=document.getElementById("timerTarget");if(tt)tt.textContent=tdays+'d '+pad2(th)+':'+pad2(tm)+':'+pad2(ts);}
@@ -732,7 +805,8 @@ async function loadDay(){const s=await load(viewKey);dayState=s||{session:null,c
 
 document.getElementById("prevDay").addEventListener("click",()=>changeDay(-1));
 document.getElementById("nextDay").addEventListener("click",()=>changeDay(1));
-document.getElementById("photoInput").addEventListener("change",e=>{if(e.target.files&&e.target.files[0])handlePhoto(e.target.files[0]);e.target.value="";});
+document.getElementById("photoInput1").addEventListener("change",e=>{if(e.target.files&&e.target.files[0])handlePhoto1(e.target.files[0]);e.target.value="";});
+document.getElementById("photoInput2").addEventListener("change",e=>{if(e.target.files&&e.target.files[0])handlePhoto2(e.target.files[0]);e.target.value="";});
 const themeBtn=document.getElementById("themeBtn");
 const COLOR_THEMES=[
   {id:"default",label:"Forest",dot:"#2E7D54"},
@@ -947,7 +1021,7 @@ document.getElementById("authSubmit").addEventListener("click",async()=>{
 });
 document.getElementById("authPassword").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("authSubmit").click();});
 document.getElementById("authGoogle").addEventListener("click",async()=>{authErr("");try{await signInWithPopup(auth,gProvider);}catch(e){authErr(e.code==='auth/popup-closed-by-user'?'Sign-in cancelled.':e.message);}});
-document.getElementById("signOutBtn").addEventListener("click",async()=>{await signOut(auth);_cache=null;DATA_DOC=null;dayState={session:null,checked:{},food:"",water:0};weights={};photoCache={};weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];macroGoals={...DEFAULT_MACRO_GOALS};xpData={total:0,days:{}};celebrated={};applyColorTheme("default");document.getElementById("mainApp").style.display="none";document.getElementById("authScreen").style.display="flex";document.getElementById("authEmail").value="";document.getElementById("authPassword").value="";});
+document.getElementById("signOutBtn").addEventListener("click",async()=>{await signOut(auth);_cache=null;DATA_DOC=null;dayState={session:null,checked:{},food:"",water:0};weights={};photoCache={};startWeight={value:null,date:"",label:""};day1PhotoLabel="Before";weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];macroGoals={...DEFAULT_MACRO_GOALS};xpData={total:0,days:{}};celebrated={};applyColorTheme("default");document.getElementById("mainApp").style.display="none";document.getElementById("authScreen").style.display="flex";document.getElementById("authEmail").value="";document.getElementById("authPassword").value="";});
 
 // ── Auth State ──
 async function migrateOldData(){try{const userSnap=await getDoc(DATA_DOC);if(userSnap.exists()&&Object.keys(userSnap.data()).length>0)return false;const oldSnap=await getDoc(doc(fsdb,'recomp','main'));if(!oldSnap.exists())return false;const oldData=oldSnap.data();await setDoc(DATA_DOC,oldData);_cache={...oldData};return true;}catch(e){return false;}}
@@ -963,6 +1037,8 @@ onAuthStateChanged(auth,async user=>{
   const t=await load("theme");applyTheme(t==="dark");
   const ct=await load("colorTheme");applyColorTheme(ct||"default");
   const w=await load("weights");weights=w||{};
+  const sw=await load("startWeight");if(sw&&sw.value!=null)startWeight=sw;
+  const d1l=await load("day1PhotoLabel");if(d1l)day1PhotoLabel=d1l;
   const wp=await load("weeklyPlan");if(wp)weeklyPlan=wp;
   const cs=await load("customSessions");
   if(cs!==null)customSessions=cs;
