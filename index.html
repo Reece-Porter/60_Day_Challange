@@ -512,12 +512,23 @@
           <div class="sr-cell"><div class="l">Fat</div><div class="v" id="srFat">0g</div></div>
           <div class="sr-cell"><div class="l">Carbs</div><div class="v" id="srCarb">0g</div></div>
         </div>
-        <div class="sr-serv-row"><label style="font-size:13px;font-weight:700">Add to</label><select class="saved-meal-sel" id="srMeal"><option value="breakfast">🍳 Breakfast</option><option value="lunch">🥪 Lunch</option><option value="dinner">🍽 Dinner</option><option value="snack">🍎 Snacks</option></select></div>
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:10px 0 14px;cursor:pointer"><input type="checkbox" id="srSaveChk"> Save to my meals for next time</label>
+        <div class="sr-serv-row" id="srMealRow"><label style="font-size:13px;font-weight:700">Add to</label><select class="saved-meal-sel" id="srMeal"><option value="breakfast">🍳 Breakfast</option><option value="lunch">🥪 Lunch</option><option value="dinner">🍽 Dinner</option><option value="snack">🍎 Snacks</option></select></div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:10px 0 14px;cursor:pointer" id="srSaveRow"><input type="checkbox" id="srSaveChk"> Save to my meals for next time</label>
         <button class="s-save-btn" id="srAdd">Add food</button>
         <button class="scan-btn" id="srBack" style="width:100%;margin-top:8px">← Scan something else</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ── Meal Builder Modal ── -->
+<div class="settings-modal hidden" id="builderModal">
+  <div class="settings-inner">
+    <div class="settings-hdr">
+      <h2>🍱 Create meal</h2>
+      <button class="settings-close" id="builderClose">×</button>
+    </div>
+    <div class="s-section" style="padding-bottom:24px" id="builderBody"></div>
   </div>
 </div>
 
@@ -652,6 +663,8 @@ const earliest=midnight(realToday)<START?midnight(realToday):START;
 let viewDate=new Date(realToday),viewKey=dkey(viewDate);
 let dayState={session:null,checked:{},food:"",water:0,meals:{}};
 let savedMeals=[];
+let recentFoods=[];       // previously scanned foods (quick re-add)
+let builderItems=[],builderName=""; // meal builder in-progress state
 let weights={},photoCache={};
 let startWeight={value:null,date:"",label:""};
 let day1PhotoLabel="Before";
@@ -747,13 +760,14 @@ function render(){
     return `<div class="mb-row"><div class="mb-top"><span>${l}${pct>=100?' ✓':''}</span><span class="mb-val">${Math.round(v)} / ${g} ${u} · ${pct}%</span></div><div class="mb-track"><div class="mb-fill${pct>115?' over':''}" style="width:${Math.min(100,pct)}%"></div></div></div>`;
   }).join('')+'</div>';
   const savedOpts=savedMeals.map((s,i)=>`<option value="${i}">${esc(s.name)}${s.brand?' — '+esc(s.brand):''}</option>`).join('');
+  const recentOpts=recentFoods.map((f,i)=>`<option value="${i}">${esc(f.name)}${f.brand?' — '+esc(f.brand):''}</option>`).join('');
   const mealsHtml=MEAL_KEYS.map(([key,label])=>{
     const list=(dayState.meals&&dayState.meals[key])||[];
     const secCals=list.reduce((a,f)=>a+foodMacros(f).cals,0);
     const rows=list.map((f,i)=>{const m=foodMacros(f);const saved=savedMeals.some(s=>s.name===f.name&&(s.barcode||'')===(f.barcode||''));
       return `<div class="food-row"><div class="food-info"><div class="food-nm">${esc(f.name)}</div><div class="food-macros">${Math.round(m.cals)} kcal · P ${m.protein.toFixed(1)}g · F ${m.fat.toFixed(1)}g · C ${m.carbs.toFixed(1)}g</div></div><input class="food-serv" type="number" min="1" value="${f.servingG}" data-meal="${key}" data-fi="${i}" title="Serving size (g)"><span class="food-g">g</span><button class="food-star${saved?' on':''}" data-meal="${key}" data-fi="${i}" title="Save to my meals">★</button><button class="food-x" data-meal="${key}" data-fi="${i}" title="Remove">×</button></div>`;
     }).join('');
-    return `<div class="meal-sec"><div class="meal-hdr"><span class="meal-name">${label}</span><span class="meal-cals">${Math.round(secCals)} kcal</span></div>${rows}<div class="meal-actions"><button class="scan-btn" data-meal="${key}">📷 Scan food</button>${savedMeals.length?`<select class="saved-meal-sel" data-meal="${key}"><option value="">＋ Saved meal…</option>${savedOpts}</select>`:''}</div></div>`;
+    return `<div class="meal-sec"><div class="meal-hdr"><span class="meal-name">${label}</span><span class="meal-cals">${Math.round(secCals)} kcal</span></div>${rows}<div class="meal-actions"><button class="scan-btn" data-meal="${key}">📷 Scan</button>${recentFoods.length?`<select class="recent-food-sel" data-meal="${key}"><option value="">🕐 Recent…</option>${recentOpts}</select>`:''}${savedMeals.length?`<select class="saved-meal-sel" data-meal="${key}"><option value="">🍱 Saved…</option>${savedOpts}</select>`:''}</div></div>`;
   }).join('');
   const absItems=customAbs;
   const absToday=customAbs.some(a=>dayState.checked[a.id]);
@@ -838,6 +852,7 @@ function render(){
         ${cardBody('nutrition',`
           ${macroBarsHtml}
           ${mealsHtml}
+          <button class="new-item-btn" id="createMealBtn" style="margin-top:2px">🍱 Create meal — combine foods into one saved meal</button>
           ${waterHtml}
         `,true)}
       </div>
@@ -914,6 +929,11 @@ function render(){
     if(sel.value==="")return;const s=savedMeals[+sel.value];if(!s)return;
     addFood(sel.dataset.meal,{id:uid(),name:s.name,brand:s.brand||'',barcode:s.barcode||'',per100:s.per100,servingG:s.servingG||100});
   }));
+  app.querySelectorAll(".recent-food-sel[data-meal]").forEach(sel=>sel.addEventListener("change",()=>{
+    if(sel.value==="")return;const f=recentFoods[+sel.value];if(!f)return;
+    addFood(sel.dataset.meal,{id:uid(),name:f.name,brand:f.brand||'',barcode:f.barcode||'',per100:f.per100,servingG:f.servingG||100});
+  }));
+  document.getElementById("createMealBtn")?.addEventListener("click",openBuilder);
   app.querySelectorAll(".food-serv[data-meal]").forEach(inp=>inp.addEventListener("change",()=>{
     const f=(dayState.meals[inp.dataset.meal]||[])[+inp.dataset.fi];if(!f)return;
     const v=parseFloat(inp.value);if(isNaN(v)||v<=0)return;
@@ -1222,14 +1242,24 @@ function showSettingsToast(msg){const t=document.createElement("div");t.classNam
 let scanMeal=null,scanProduct=null,qrScanner=null;
 function openScanner(meal){
   scanMeal=meal;scanProduct=null;
+  const isBuilder=meal==="__builder__";
   document.getElementById("scanModal").classList.remove("hidden");
   document.getElementById("scanResult").style.display="none";
   document.getElementById("scanLive").style.display="block";
   document.getElementById("scanManualInput").value="";
-  document.getElementById("srMeal").value=meal;
+  document.getElementById("srMealRow").style.display=isBuilder?"none":"flex";
+  document.getElementById("srSaveRow").style.display=isBuilder?"none":"flex";
+  document.getElementById("srAdd").textContent=isBuilder?"Add to meal":"Add food";
+  if(!isBuilder)document.getElementById("srMeal").value=meal;
   document.getElementById("srSaveChk").checked=false;
   document.getElementById("scanStatus").textContent="Point your camera at a food barcode…";
   startCamera();
+}
+function pushRecent(f){
+  recentFoods=recentFoods.filter(r=>!(r.name===f.name&&(r.barcode||'')===(f.barcode||'')));
+  recentFoods.unshift({name:f.name,brand:f.brand||'',per100:f.per100,servingG:f.servingG,barcode:f.barcode||''});
+  if(recentFoods.length>30)recentFoods.length=30;
+  save("recentFoods",recentFoods);
 }
 function startCamera(){
   if(typeof Html5Qrcode==="undefined"){document.getElementById("scanStatus").textContent="Camera scanner unavailable — type the barcode number below.";return;}
@@ -1295,14 +1325,83 @@ document.getElementById("srAdd").addEventListener("click",()=>{
   if(!scanProduct)return;
   const g=parseFloat(document.getElementById("srServing").value);
   if(isNaN(g)||g<=0){alert("Enter a valid serving size.");return;}
-  const meal=document.getElementById("srMeal").value||scanMeal||"snack";
   const food={id:uid(),name:scanProduct.name,brand:scanProduct.brand,barcode:scanProduct.barcode,per100:scanProduct.per100,servingG:g};
+  pushRecent(food);
+  if(scanMeal==="__builder__"){
+    builderItems.push(food);
+    closeScanner();openBuilder();
+    return;
+  }
+  const meal=document.getElementById("srMeal").value||scanMeal||"snack";
   if(document.getElementById("srSaveChk").checked&&!savedMeals.some(s=>s.name===food.name&&(s.barcode||'')===(food.barcode||''))){
     savedMeals.push({name:food.name,brand:food.brand,per100:food.per100,servingG:g,barcode:food.barcode});
     save("savedMeals",savedMeals);
   }
   closeScanner();addFood(meal,food);
 });
+
+// ══════════════════════════════════════════
+// ── Meal Builder ──
+// ══════════════════════════════════════════
+function openBuilder(){document.getElementById("builderModal").classList.remove("hidden");renderBuilder();}
+function closeBuilder(){document.getElementById("builderModal").classList.add("hidden");}
+function builderTotals(){const t={cals:0,protein:0,fat:0,carbs:0};builderItems.forEach(f=>{const m=foodMacros(f);t.cals+=m.cals;t.protein+=m.protein;t.fat+=m.fat;t.carbs+=m.carbs;});return t;}
+function renderBuilder(){
+  const body=document.getElementById("builderBody");
+  const t=builderTotals();
+  const totalG=builderItems.reduce((a,f)=>a+(+f.servingG||0),0);
+  const rows=builderItems.map((f,i)=>{const m=foodMacros(f);
+    return `<div class="food-row"><div class="food-info"><div class="food-nm">${esc(f.name)}</div><div class="food-macros">${Math.round(m.cals)} kcal · P ${m.protein.toFixed(1)}g · F ${m.fat.toFixed(1)}g · C ${m.carbs.toFixed(1)}g</div></div><input class="food-serv b-serv" type="number" min="1" value="${f.servingG}" data-bi="${i}"><span class="food-g">g</span><button class="food-x b-x" data-bi="${i}" title="Remove">×</button></div>`;
+  }).join('');
+  const recOpts=recentFoods.map((f,i)=>`<option value="r${i}">${esc(f.name)}${f.brand?' — '+esc(f.brand):''}</option>`).join('');
+  const savOpts=savedMeals.map((s,i)=>`<option value="s${i}">${esc(s.name)}</option>`).join('');
+  const addOpts=(recOpts?`<optgroup label="Recently scanned">${recOpts}</optgroup>`:'')+(savOpts?`<optgroup label="Saved meals">${savOpts}</optgroup>`:'');
+  body.innerHTML=`
+    <div class="e-label">Meal name</div>
+    <input class="e-input" id="bName" value="${esc(builderName)}" placeholder="e.g. Chicken &amp; rice bowl">
+    <div class="e-label">Foods in this meal</div>
+    ${rows||'<p style="font-size:13px;color:var(--muted);padding:6px 0 2px">No foods yet — scan one or pick a previous food below.</p>'}
+    <div class="meal-actions" style="margin:12px 0 4px">
+      <button class="scan-btn" id="bScan">📷 Scan food</button>
+      ${addOpts?`<select class="saved-meal-sel" id="bAddSel"><option value="">＋ Add previous food…</option>${addOpts}</select>`:''}
+    </div>
+    <div class="e-label" style="margin-top:14px">Combined macros${totalG?` · ${Math.round(totalG)}g total`:''}</div>
+    <div class="sr-grid">
+      <div class="sr-cell"><div class="l">kcal</div><div class="v">${Math.round(t.cals)}</div></div>
+      <div class="sr-cell"><div class="l">Protein</div><div class="v">${t.protein.toFixed(1)}g</div></div>
+      <div class="sr-cell"><div class="l">Fat</div><div class="v">${t.fat.toFixed(1)}g</div></div>
+      <div class="sr-cell"><div class="l">Carbs</div><div class="v">${t.carbs.toFixed(1)}g</div></div>
+    </div>
+    <button class="s-save-btn" id="bSave">Save meal${builderItems.length?` (${builderItems.length} food${builderItems.length>1?'s':''})`:''}</button>`;
+  body.querySelector("#bName").addEventListener("input",e=>builderName=e.target.value);
+  body.querySelectorAll(".b-serv").forEach(inp=>inp.addEventListener("change",()=>{
+    const v=parseFloat(inp.value);if(isNaN(v)||v<=0)return;
+    builderItems[+inp.dataset.bi].servingG=v;renderBuilder();
+  }));
+  body.querySelectorAll(".b-x").forEach(b=>b.addEventListener("click",()=>{builderItems.splice(+b.dataset.bi,1);renderBuilder();}));
+  body.querySelector("#bScan").addEventListener("click",()=>{closeBuilder();openScanner("__builder__");});
+  body.querySelector("#bAddSel")?.addEventListener("change",e=>{
+    const v=e.target.value;if(!v)return;
+    const src=v[0]==='r'?recentFoods[+v.slice(1)]:savedMeals[+v.slice(1)];
+    if(src)builderItems.push({id:uid(),name:src.name,brand:src.brand||'',barcode:src.barcode||'',per100:src.per100,servingG:src.servingG||100});
+    renderBuilder();
+  });
+  body.querySelector("#bSave").addEventListener("click",()=>{
+    const name=(builderName||'').trim();
+    if(!name){alert("Give your meal a name.");return;}
+    if(!builderItems.length){alert("Add at least one food to the meal.");return;}
+    const tt=builderTotals();
+    const totG=builderItems.reduce((a,f)=>a+(+f.servingG||0),0)||100;
+    // store combined meal as per-100g so serving-size scaling keeps working
+    const per100={cals:+(tt.cals/totG*100).toFixed(1),protein:+(tt.protein/totG*100).toFixed(2),fat:+(tt.fat/totG*100).toFixed(2),carbs:+(tt.carbs/totG*100).toFixed(2)};
+    savedMeals.push({name,brand:builderItems.map(f=>f.name).slice(0,3).join(', ').slice(0,60),per100,servingG:Math.round(totG),barcode:''});
+    save("savedMeals",savedMeals);
+    builderItems=[];builderName="";
+    closeBuilder();render();showSettingsToast("Meal saved ✓ — find it under 🍱 Saved");
+  });
+}
+document.getElementById("builderClose").addEventListener("click",closeBuilder);
+document.getElementById("builderModal").addEventListener("click",e=>{if(e.target===document.getElementById("builderModal"))closeBuilder();});
 
 // ── Auth ──
 let authMode='signin';
@@ -1318,7 +1417,7 @@ document.getElementById("authSubmit").addEventListener("click",async()=>{
 });
 document.getElementById("authPassword").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("authSubmit").click();});
 document.getElementById("authGoogle").addEventListener("click",async()=>{authErr("");try{await signInWithPopup(auth,gProvider);}catch(e){authErr(e.code==='auth/popup-closed-by-user'?'Sign-in cancelled.':e.message);}});
-document.getElementById("signOutBtn").addEventListener("click",async()=>{await signOut(auth);_cache=null;DATA_DOC=null;dayState={session:null,checked:{},food:"",water:0,meals:{}};savedMeals=[];weights={};photoCache={};startWeight={value:null,date:"",label:""};day1PhotoLabel="Before";weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];macroGoals={...DEFAULT_MACRO_GOALS};xpData={total:0,days:{}};celebrated={};applyColorTheme("default");document.getElementById("mainApp").style.display="none";document.getElementById("authScreen").style.display="flex";document.getElementById("authEmail").value="";document.getElementById("authPassword").value="";});
+document.getElementById("signOutBtn").addEventListener("click",async()=>{await signOut(auth);_cache=null;DATA_DOC=null;dayState={session:null,checked:{},food:"",water:0,meals:{}};savedMeals=[];recentFoods=[];builderItems=[];builderName="";weights={};photoCache={};startWeight={value:null,date:"",label:""};day1PhotoLabel="Before";weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];macroGoals={...DEFAULT_MACRO_GOALS};xpData={total:0,days:{}};celebrated={};applyColorTheme("default");document.getElementById("mainApp").style.display="none";document.getElementById("authScreen").style.display="flex";document.getElementById("authEmail").value="";document.getElementById("authPassword").value="";});
 
 // ── Auth State ──
 async function migrateOldData(){try{const userSnap=await getDoc(DATA_DOC);if(userSnap.exists()&&Object.keys(userSnap.data()).length>0)return false;const oldSnap=await getDoc(doc(fsdb,'recomp','main'));if(!oldSnap.exists())return false;const oldData=oldSnap.data();await setDoc(DATA_DOC,oldData);_cache={...oldData};return true;}catch(e){return false;}}
@@ -1343,6 +1442,7 @@ onAuthStateChanged(auth,async user=>{
   const ca=await load("customAbs");if(ca&&ca.length)customAbs=ca;
   const mg=await load("macroGoals");if(mg)macroGoals={...DEFAULT_MACRO_GOALS,...mg};
   const sm=await load("savedMeals");savedMeals=sm||[];
+  const rf=await load("recentFoods");recentFoods=rf||[];
   const xp=await load("xpData");if(xp)xpData=xp;
   await loadDay();render();
   tickTimers();setInterval(tickTimers,1000);
