@@ -1704,17 +1704,26 @@ async function checkStepsInbox(silent){
     const snap=await getDoc(doc(fsdb,"stepsInbox",stepsToken));
     if(!snap.exists()){if(!silent)showSettingsToast("No synced steps yet — run the Shortcut first");return;}
     const d=snap.data();
-    const date=d.date,steps=Math.max(0,Math.round(+d.steps||0));
-    if(!date){if(!silent)showSettingsToast("Sync received but the date was blank — check the Shortcut's date token");return;}
+    const rawDate=String(d.date||"").trim(),steps=Math.max(0,Math.round(+d.steps||0));
+    if(!rawDate){if(!silent)showSettingsToast("Sync received but the date was blank — check the Shortcut's date token");return;}
     if(!steps){if(!silent)showSettingsToast("Sync received but steps were 0 — check Health permission for Shortcuts");return;}
-    if(date===viewKey){
-      if((+dayState.steps||0)!==steps){dayState.steps=steps;persistDay();updateXPAfterFood();render();if(!silent)showSettingsToast("Steps synced ✓ "+steps.toLocaleString());}
-      else if(!silent)showSettingsToast("Steps already up to date ("+steps.toLocaleString()+")");
+    // Normalise the Shortcut's local calendar date to the app's day key
+    // (the app keys days in UTC, the Shortcut sends the phone's local date)
+    let key=rawDate;
+    const parsed=new Date(rawDate+"T12:00:00");
+    if(!isNaN(parsed))key=dkey(parsed);
+    if(key===viewKey){
+      dayState.steps=steps;persistDay();updateXPAfterFood();render();
+      if(!silent)showSettingsToast("Steps synced ✓ "+steps.toLocaleString());
     }else{
-      const ds=await load(date);
-      const st=ds||{session:null,checked:{},food:"",water:0,meals:{}};
-      if((+st.steps||0)!==steps){st.steps=steps;await save(date,st);}
-      if(!silent)showSettingsToast("Steps synced ✓ "+steps.toLocaleString()+" for "+date);
+      const ds=await load(key);
+      const st=ds||{session:null,checked:{},food:"",water:0,meals:{},steps:0};
+      if((+st.steps||0)!==steps){st.steps=steps;await save(key,st);}
+      if(!silent){
+        showSettingsToast("Steps synced ✓ "+steps.toLocaleString()+" for "+key);
+        // jump the view to the day the steps landed on so the update is visible
+        if(key>=dkey(earliest)&&key<=realKey)jumpTo(key);
+      }
     }
   }catch(e){if(!silent)showSettingsToast("Sync check failed — try again");}
 }
