@@ -236,6 +236,18 @@
     border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);cursor:pointer;}
   .water-btn:hover{background:var(--line);}
   .water-reset{font-family:inherit;font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;margin-left:auto;}
+  /* Calorie balance */
+  .cal-balance{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:16px;}
+  .cb-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+  .cb-cell{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:9px 4px;text-align:center;}
+  .cb-cell .l{font-size:9.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;font-weight:700;}
+  .cb-cell .v{font-size:15px;font-weight:800;margin-top:2px;}
+  .cb-cell .v.earn{color:rgb(var(--accent-raw));}
+  .cb-cell .v.neg{color:#e05252;}
+  .cb-steps{display:flex;align-items:center;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);flex-wrap:wrap;}
+  .cb-steps label{font-size:12px;font-weight:700;}
+  .cb-steps input{width:92px;font-family:inherit;font-size:13px;font-weight:600;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);text-align:right;}
+  .cb-note{font-size:11px;color:var(--muted);}
   /* Macro progress bars */
   .macro-bars{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
   .mb-top{display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:4px;}
@@ -272,7 +284,9 @@
   .scan-btn.big:hover{background:rgba(var(--accent-raw),.18);}
   .saved-meal-sel{flex:1;min-width:0;font-family:inherit;font-size:12px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);}
   /* Scan modal */
-  #qrReader{width:100%;border-radius:12px;overflow:hidden;background:#000;min-height:100px;}
+  #qrReader{width:100%;border-radius:12px;overflow:hidden;background:#000;min-height:100px;position:relative;}
+  #qrReader video{width:100%;display:block;border-radius:12px;}
+  #qrReader canvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
   .scan-manual{display:flex;gap:8px;margin-top:12px;}
   .scan-status{font-size:13px;color:var(--muted);margin-top:10px;min-height:18px;}
   .sr-name{font-size:17px;font-weight:800;}
@@ -620,7 +634,7 @@
 <input type="file" accept="image/*" id="photoInput2" style="display:none">
 </div>
 
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@ericblade/quagga2@1.8.4/dist/quagga.min.js"></script>
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getFirestore, doc, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
@@ -806,6 +820,25 @@ function render(){
   const planSession=todayPlan.session||"rest",planAbs=!!todayPlan.abs;
   const sess=sessById(dayState.session);
   const totals=consumedTotals(dayState);
+  // Calorie balance: steps → calories earned
+  const stepsToday=+dayState.steps||0;
+  const wEntries=Object.entries(weights).sort((a,b)=>a[0]<b[0]?-1:1);
+  const latestW=wEntries.length?wEntries[wEntries.length-1][1]:(startWeight.value||70);
+  const burned=Math.round(stepsToday*0.00057*latestW); // ≈0.04 kcal/step at 70 kg, scales with body weight
+  const remaining=Math.round((macroGoals.calories||0)-totals.cals+burned);
+  const balanceHtml=`<div class="cal-balance">
+    <div class="cb-grid">
+      <div class="cb-cell"><div class="l">Goal</div><div class="v">${macroGoals.calories}</div></div>
+      <div class="cb-cell"><div class="l">Consumed</div><div class="v">${Math.round(totals.cals)}</div></div>
+      <div class="cb-cell"><div class="l">Earned 🚶</div><div class="v earn">+${burned}</div></div>
+      <div class="cb-cell"><div class="l">Remaining</div><div class="v${remaining<0?' neg':''}">${remaining}</div></div>
+    </div>
+    <div class="cb-steps">
+      <label>👟 Steps today</label>
+      <input id="stepsInput" type="number" min="0" step="100" value="${stepsToday||''}" placeholder="e.g. 8500">
+      <span class="cb-note">≈ ${burned} kcal burned walking</span>
+    </div>
+  </div>`;
   const macroBarsHtml='<div class="macro-bars">'+[
     ["Calories",totals.cals,macroGoals.calories,"kcal"],
     ["Protein",totals.protein,macroGoals.protein,"g"],
@@ -918,8 +951,8 @@ function render(){
     ${cardBody('daily',DAILY.map(it=>itemHtml(it)).join(''),true)}
   </div>`;
   const macrosCard=`<div class="card">
-    ${cardHd('macros','Macros · today','',true)}
-    ${cardBody('macros',macroBarsHtml,true)}
+    ${cardHd('macros','Calories & macros · today','',true)}
+    ${cardBody('macros',balanceHtml+macroBarsHtml,true)}
   </div>`;
   const mealsCard=`<div class="card">
     ${cardHd('nutrition','Meals · what I ate','',true)}
@@ -966,7 +999,7 @@ function render(){
     <div class="card-hd open" style="cursor:default">Today at a glance</div>
     <div class="card-body">
       <div class="sum-grid">
-        <div class="sum-tile"><div class="st-label">🔥 Calories</div><div class="st-val">${Math.round(totals.cals)}<span class="st-sub"> / ${macroGoals.calories} kcal</span></div><div class="mb-track"><div class="mb-fill" style="width:${calPct}%"></div></div></div>
+        <div class="sum-tile"><div class="st-label">🔥 Calories</div><div class="st-val">${Math.round(totals.cals)}<span class="st-sub"> / ${macroGoals.calories} kcal</span></div><div class="mb-track"><div class="mb-fill" style="width:${calPct}%"></div></div><div class="st-sub" style="display:block;margin-top:6px">🚶 +${burned} earned · ${remaining<0?`<span style="color:#e05252">${-remaining} over</span>`:remaining+' left'}</div></div>
         <div class="sum-tile"><div class="st-label">💧 Water</div><div class="st-val">${wDisp}<span class="st-sub"> / ${wTgtDisp}</span></div><div class="mb-track"><div class="mb-fill" style="width:${wpct}%;background:var(--water)"></div></div></div>
         <div class="sum-tile"><div class="st-label">📅 Days this week</div><div class="st-val"><span id="sumWeekDone">–</span><span class="st-sub"> / 7 complete</span></div></div>
         <div class="sum-tile"><div class="st-label">✅ Today's tasks</div><div class="st-val">${done}<span class="st-sub"> / ${total}</span></div><div class="mb-track"><div class="mb-fill" style="width:${pct}%"></div></div></div>
@@ -1026,6 +1059,10 @@ function render(){
   // Water
   app.querySelectorAll(".water-btn").forEach(btn=>btn.addEventListener("click",()=>{dayState.water=(dayState.water||0)+(+btn.dataset.ml);persistDay();render();}));
   app.querySelector(".water-reset")?.addEventListener("click",()=>{dayState.water=0;persistDay();render();});
+  document.getElementById("stepsInput")?.addEventListener("change",e=>{
+    const v=Math.max(0,Math.round(+e.target.value||0));
+    dayState.steps=v;persistDay();render();
+  });
   const wi=document.getElementById("wInput");if(wi&&weights[viewKey]!=null)wi.value=weights[viewKey];
   // Food tracker
   app.querySelectorAll(".scan-btn[data-meal]").forEach(b=>b.addEventListener("click",()=>openScanner(b.dataset.meal)));
@@ -1363,7 +1400,8 @@ function showSettingsToast(msg){const t=document.createElement("div");t.classNam
 // ══════════════════════════════════════════
 // ── Food Barcode Scanner ──
 // ══════════════════════════════════════════
-let scanMeal=null,scanProduct=null,qrScanner=null;
+let scanMeal=null,scanProduct=null;
+let scanStream=null,scanTimer=null,quaggaOn=false,lastCode="",lastCodeHits=0;
 function openScanner(meal){
   scanMeal=meal;scanProduct=null;
   const isBuilder=meal==="__builder__";
@@ -1385,45 +1423,101 @@ function pushRecent(f){
   if(recentFoods.length>30)recentFoods.length=30;
   save("recentFoods",recentFoods);
 }
-function startCamera(){
-  if(typeof Html5Qrcode==="undefined"){document.getElementById("scanStatus").textContent="Camera scanner unavailable — type the barcode number below.";return;}
-  const onScan=code=>{stopCamera();lookupBarcode(code);};
-  const fail=()=>{qrScanner=null;document.getElementById("scanStatus").textContent="Camera unavailable — type the barcode number below.";};
-  try{
-    // Product barcodes are 1D (EAN/UPC) — declare formats explicitly and use the
-    // browser's native BarcodeDetector where available (much more reliable than the JS fallback)
-    const fmts=[
-      Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,
-      Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,
-      Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.CODE_39,
-      Html5QrcodeSupportedFormats.QR_CODE];
-    qrScanner=new Html5Qrcode("qrReader",{formatsToSupport:fmts,verbose:false,
-      experimentalFeatures:{useBarCodeDetectorIfSupported:true}});
-    // First try a high-res wide-box config; if the device rejects it, retry with plain defaults.
-    qrScanner.start(
-      {facingMode:"environment"},
-      {fps:12,
-       qrbox:(vw,vh)=>({width:Math.min(320,Math.floor(vw*.9)),height:Math.max(100,Math.min(150,Math.floor(vh*.5)))}),
-       videoConstraints:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}}},
-      onScan,()=>{})
-      .catch(()=>{
-        try{qrScanner.start({facingMode:"environment"},{fps:10},onScan,()=>{}).catch(fail);}
-        catch(e){fail();}
+async function startCamera(){
+  const st=document.getElementById("scanStatus");
+  const box=document.getElementById("qrReader");
+  stopCamera();box.innerHTML="";lastCode="";lastCodeHits=0;
+  // Path 1: native BarcodeDetector — hardware-grade 1D scanning (Android Chrome etc.)
+  if("BarcodeDetector" in window){
+    try{
+      const supported=await BarcodeDetector.getSupportedFormats();
+      const want=["ean_13","ean_8","upc_a","upc_e","code_128"].filter(f=>supported.includes(f));
+      if(want.length){
+        const video=document.createElement("video");
+        video.setAttribute("playsinline","");video.muted=true;
+        box.appendChild(video);
+        scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}}});
+        video.srcObject=scanStream;await video.play();
+        const det=new BarcodeDetector({formats:want});
+        scanTimer=setInterval(async()=>{
+          try{
+            const codes=await det.detect(video);
+            if(codes.length&&codes[0].rawValue){const v=codes[0].rawValue;stopCamera();lookupBarcode(v);}
+          }catch(e){}
+        },180);
+        st.textContent="Point your camera at the barcode…";
+        return;
+      }
+    }catch(e){stopCamera();}
+  }
+  // Path 2: Quagga2 — JS decoder specialised in EAN/UPC product barcodes (iPhone Safari etc.)
+  if(typeof Quagga!=="undefined"){
+    try{
+      quaggaOn=true;
+      Quagga.init({
+        inputStream:{name:"Live",type:"LiveStream",target:box,
+          constraints:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}}},
+        locator:{patchSize:"medium",halfSample:true},
+        numOfWorkers:0,frequency:10,locate:true,
+        decoder:{readers:["ean_reader","ean_8_reader","upc_reader","upc_e_reader","code_128_reader"]}
+      },err=>{
+        if(err){quaggaOn=false;st.textContent="Camera unavailable — type the barcode number below.";return;}
+        Quagga.start();
+        st.textContent="Point your camera at the barcode…";
       });
-  }catch(e){fail();}
+      Quagga.offDetected();
+      Quagga.onDetected(res=>{
+        const code=res&&res.codeResult&&res.codeResult.code;
+        if(!code)return;
+        // require the same code twice in a row to kill false positives
+        if(code===lastCode)lastCodeHits++;else{lastCode=code;lastCodeHits=1;}
+        if(lastCodeHits>=2){stopCamera();lookupBarcode(code);}
+      });
+    }catch(e){quaggaOn=false;st.textContent="Camera unavailable — type the barcode number below.";}
+    return;
+  }
+  st.textContent="Camera scanner unavailable — type the barcode number below.";
 }
-function stopCamera(){if(qrScanner){const q=qrScanner;qrScanner=null;try{q.stop().then(()=>{try{q.clear();}catch(e){}}).catch(()=>{});}catch(e){}}}
+function stopCamera(){
+  if(scanTimer){clearInterval(scanTimer);scanTimer=null;}
+  if(scanStream){try{scanStream.getTracks().forEach(t=>t.stop());}catch(e){}scanStream=null;}
+  if(quaggaOn){try{Quagga.stop();Quagga.offDetected();}catch(e){}quaggaOn=false;}
+  const box=document.getElementById("qrReader");if(box)box.innerHTML="";
+}
 function closeScanner(){stopCamera();document.getElementById("scanModal").classList.add("hidden");scanMeal=null;scanProduct=null;}
+function parseNutriments(p){
+  const n=p.nutriments||{};
+  const num=x=>{const v=parseFloat(x);return isNaN(v)?null:v;};
+  const servQ=num(p.serving_quantity);
+  // start from per-100g values
+  let cals=num(n["energy-kcal_100g"]);
+  let protein=num(n.proteins_100g),fat=num(n.fat_100g),carbs=num(n.carbohydrates_100g);
+  // fall back to per-serving values scaled to 100g
+  if(protein==null&&num(n.proteins_serving)!=null&&servQ)protein=num(n.proteins_serving)/servQ*100;
+  if(fat==null&&num(n.fat_serving)!=null&&servQ)fat=num(n.fat_serving)/servQ*100;
+  if(carbs==null&&num(n.carbohydrates_serving)!=null&&servQ)carbs=num(n.carbohydrates_serving)/servQ*100;
+  if(cals==null&&num(n["energy-kcal_serving"])!=null&&servQ)cals=num(n["energy-kcal_serving"])/servQ*100;
+  // energy given only in kJ → convert
+  if(cals==null&&num(n.energy_100g)!=null)cals=num(n.energy_100g)/4.184;
+  protein=protein||0;fat=fat||0;carbs=carbs||0;
+  // sanity checks: kcal per 100g physically caps around ~900 (pure fat)
+  const est=4*protein+9*fat+4*carbs; // kcal estimated from macros
+  if(cals!=null&&cals>950)cals=cals/4.184;           // kJ entered in the kcal field
+  if(cals!=null&&est>10&&cals>est*1.7+30)cals=est;   // wildly above what macros allow → trust macros
+  if(cals==null||cals<=0)cals=est;                   // missing → compute from macros
+  return{cals:+cals.toFixed(1),protein:+protein.toFixed(2),fat:+fat.toFixed(2),carbs:+carbs.toFixed(2),servingG:servQ&&servQ>0?servQ:100};
+}
 async function lookupBarcode(code){
   const st=document.getElementById("scanStatus");st.textContent="Looking up "+code+"…";
   try{
-    const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,brands,nutriments,serving_quantity`);
+    const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,brands,nutriments,serving_quantity,nutrition_data_per`);
     const j=await r.json();
-    if(!j.product){st.textContent="Product not found — try scanning again or type the barcode.";if(!qrScanner)startCamera();return;}
-    const p=j.product,n=p.nutriments||{};
+    if(!j.product){st.textContent="Product not found — try scanning again or type the barcode.";startCamera();return;}
+    const p=j.product;
+    const nu=parseNutriments(p);
     scanProduct={name:p.product_name||"Unknown product",brand:p.brands||"",barcode:code,
-      per100:{cals:+n["energy-kcal_100g"]||0,protein:+n.proteins_100g||0,fat:+n.fat_100g||0,carbs:+n.carbohydrates_100g||0},
-      servingG:+p.serving_quantity||100};
+      per100:{cals:nu.cals,protein:nu.protein,fat:nu.fat,carbs:nu.carbs},
+      servingG:nu.servingG};
     showScanResult();
   }catch(e){st.textContent="Lookup failed — check your connection and try again.";}
 }
