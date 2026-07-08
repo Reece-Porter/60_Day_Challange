@@ -70,7 +70,7 @@
   .auth-google svg{flex-shrink:0;}
 
   /* ── Main App ── */
-  #mainApp{padding:18px 18px 60px;max-width:1160px;margin:0 auto;}
+  #mainApp{padding:18px 18px 120px;max-width:1160px;margin:0 auto;}
   .eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-weight:600;}
   .top{display:flex;justify-content:space-between;align-items:center;}
   .top-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap;}
@@ -112,7 +112,7 @@
   .pg-col{display:flex;flex-direction:column;}
   /* Small phones */
   @media(max-width:480px){
-    #mainApp{padding:12px 12px 48px;}
+    #mainApp{padding:12px 12px 104px;}
     .count{font-size:40px;}
     .count-label{font-size:12px;}
     .timer-box{min-width:120px;padding:8px 10px;}
@@ -137,7 +137,7 @@
   }
   /* Desktop: more breathing room, larger type */
   @media(min-width:1100px){
-    #mainApp{padding:32px 36px 80px;max-width:1280px;}
+    #mainApp{padding:32px 36px 130px;max-width:1280px;}
     .page-grid{gap:22px;}
     .pg-col .card{margin-top:22px;}
     .card-hd{padding:16px 20px;font-size:15px;}
@@ -409,6 +409,25 @@
   .s-save-btn{width:100%;font-family:inherit;font-size:14px;font-weight:700;color:var(--btn-text);
     background:var(--btn-bg);border:none;border-radius:10px;padding:12px;cursor:pointer;margin-top:4px;}
 
+  /* ── Tab bar ── */
+  .tabbar{position:fixed;bottom:14px;left:50%;transform:translateX(-50%);display:flex;gap:2px;
+    background:var(--card);border:1px solid var(--line);border-radius:18px;padding:6px;
+    box-shadow:var(--shadow-lg);z-index:5000;}
+  .tabbar button{font-family:inherit;border:none;background:none;color:var(--muted);font-size:11px;font-weight:700;
+    display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 14px;border-radius:12px;cursor:pointer;min-width:64px;transition:background .15s,color .15s;}
+  .tabbar button .tb-ico{font-size:18px;line-height:1;}
+  .tabbar button.active{background:rgba(var(--accent-raw),.12);color:rgb(var(--accent-raw));}
+  @media(max-width:480px){
+    .tabbar{width:calc(100% - 16px);bottom:8px;justify-content:space-between;border-radius:16px;}
+    .tabbar button{flex:1;min-width:0;padding:6px 4px;font-size:10px;}
+  }
+  /* ── Summary tiles ── */
+  .sum-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .sum-tile{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px;}
+  .st-label{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+  .st-val{font-size:22px;font-weight:800;margin:6px 0 8px;line-height:1.1;}
+  .st-sub{font-size:12px;color:var(--muted);font-weight:600;}
+
   /* ══ Polish layer — sleek elevation, gradients & micro-interactions ══ */
   header{background:var(--card);border:1px solid var(--line);border-radius:20px;
     padding:20px;box-shadow:var(--shadow);margin-bottom:16px;}
@@ -472,17 +491,6 @@
         Continue with Google
       </button>
     </div>
-  </div>
-</div>
-
-<!-- ── Settings Modal ── -->
-<div class="settings-modal hidden" id="settingsModal">
-  <div class="settings-inner">
-    <div class="settings-hdr">
-      <h2>⚙ Settings</h2>
-      <button class="settings-close" id="settingsClose">×</button>
-    </div>
-    <div id="settingsBody"></div>
   </div>
 </div>
 
@@ -572,6 +580,13 @@
   </div>
 </header>
 <div id="app" class="loading">Loading…</div>
+<nav class="tabbar" id="tabbar">
+  <button data-tab="summary" class="active"><span class="tb-ico">🏠</span>Summary</button>
+  <button data-tab="nutrition"><span class="tb-ico">🍎</span>Nutrition</button>
+  <button data-tab="gym"><span class="tb-ico">🏋️</span>Gym</button>
+  <button data-tab="weight"><span class="tb-ico">⚖️</span>Weight</button>
+  <button data-tab="settings"><span class="tb-ico">⚙️</span>Settings</button>
+</nav>
 <input type="file" accept="image/*" id="photoInput1" style="display:none">
 <input type="file" accept="image/*" id="photoInput2" style="display:none">
 </div>
@@ -795,7 +810,7 @@ function render(){
     seg=`<div class="empty-sess-banner">
       <div class="esb-icon">🏋️</div>
       <div class="esb-text">No workout sessions yet</div>
-      <div class="esb-sub">Tap <strong>⚙ Settings</strong> in the top-right, then <strong>Workout Sessions → + New Session</strong> to build your first session.</div>
+      <div class="esb-sub">Open the <strong>⚙️ Settings</strong> tab below, then <strong>Workout Sessions → + New Session</strong> to build your first session.</div>
       <button class="esb-btn" id="esbSettingsBtn">⚙ Open Settings</button>
     </div>`;
   } else {
@@ -824,89 +839,120 @@ function render(){
     </div>
   </div>`;
 
-  const app=document.getElementById("app");app.className="";
-  app.innerHTML=`
-  <div class="page-grid">
-    <div class="pg-col">
-      <div class="card">
-        ${cardHd('photos','Progress · Day 1 vs '+cmpLabel,'',true)}
-        ${cardBody('photos',`<div class="cmp">
-          <div class="cmp-cell">
-            <div class="cmp-img" id="img1"><span class="ph">No before photo yet</span></div>
-            <div class="cmp-cap-edit"><input id="day1LabelInput" value="${esc(day1PhotoLabel)}" placeholder="e.g. Before — 1 Jun" maxlength="30"></div>
-            <button class="photo-btn" id="photoBtn1">Upload before photo</button>
-          </div>
-          <div class="cmp-cell">
-            <div class="cmp-img" id="img2"><span class="ph">No photo</span></div>
-            <div class="cmp-cap">${cmpLabel}<span>${pd<1?'before start':'Day '+pd}</span></div>
-            <button class="photo-btn" id="photoBtn2">${photoLabel2}</button>
-          </div>
-        </div>`,true)}
+  // ── Card builders ──
+  const photosCard=`<div class="card">
+    ${cardHd('photos','Progress · Day 1 vs '+cmpLabel,'',true)}
+    ${cardBody('photos',`<div class="cmp">
+      <div class="cmp-cell">
+        <div class="cmp-img" id="img1"><span class="ph">No before photo yet</span></div>
+        <div class="cmp-cap-edit"><input id="day1LabelInput" value="${esc(day1PhotoLabel)}" placeholder="e.g. Before — 1 Jun" maxlength="30"></div>
+        <button class="photo-btn" id="photoBtn1">Upload before photo</button>
       </div>
-      <div class="card">
-        ${cardHd('daily','Every day · non-negotiables',dailyDone+'/'+DAILY.length,true)}
-        ${cardBody('daily',DAILY.map(it=>itemHtml(it)).join(''),true)}
+      <div class="cmp-cell">
+        <div class="cmp-img" id="img2"><span class="ph">No photo</span></div>
+        <div class="cmp-cap">${cmpLabel}<span>${pd<1?'before start':'Day '+pd}</span></div>
+        <button class="photo-btn" id="photoBtn2">${photoLabel2}</button>
       </div>
-      <div class="card">
-        ${cardHd('nutrition','Nutrition','',true)}
-        ${cardBody('nutrition',`
-          ${macroBarsHtml}
-          ${mealsHtml}
-          <button class="new-item-btn" id="createMealBtn" style="margin-top:2px">🍱 Create meal — combine foods into one saved meal</button>
-          ${waterHtml}
-        `,true)}
-      </div>
-    </div>
-    <div class="pg-col">
-      <div class="card">
-        ${cardHd('plan',"Today's plan",'',true)}
-        ${cardBody('plan',`<div class="plan-today"><div class="pt-label">${pretty(viewDate)}</div><div class="pt-session">${plannedSess?plannedSess.name:'Rest'}</div><div class="pt-tags">${customSessions.map(s=>`<span class="pt-tag${planSession===s.id?' active':''}">${s.name}</span>`).join('')}<span class="pt-tag${planAbs?' active':''}">Abs</span></div></div><button class="plan-edit-toggle" id="planEditToggle">${planEditorOpen?'▲ Hide schedule':'▼ Edit weekly schedule'}</button><div class="plan-editor${planEditorOpen?' open':''}" id="planEditor">${planRows}</div>`,true)}
-      </div>
-      <div class="card">
-        ${cardHd('gym','Gym — session',sess?(gymDone+'/'+gymTotal):'',true)}
-        ${cardBody('gym',seg+train,true)}
-      </div>
-      <div class="card">
-        ${cardHd('abs','Abs at home',absToday?'✓ today':'',false)}
-        ${cardBody('abs',`<div class="seg-hint" style="margin-top:-4px;margin-bottom:12px">3–4×/week — floor only, no equipment.</div>${absItems.map(it=>{const on=!!dayState.checked[it.id];const lbl=[it.sets&&it.sets+' sets',it.reps].filter(Boolean).join(' · ')+(it.note?' · '+it.note:'');return `<div class="item ${on?'done':''}" data-id="${it.id}"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="item-text"><div class="t">${it.name}</div>${lbl?`<div class="s">${lbl}</div>`:''}</div></div>`;}).join('')}`,false)}
-      </div>
-      <div class="card">
-        ${cardHd('week','This week','',true)}
-        ${cardBody('week','<div class="week" id="week"></div>',true)}
-      </div>
-    </div>
-  </div>
-  <div class="pg-full">
-    <div class="card">
-      ${cardHd('weight','Weight','',true)}
-      ${cardBody('weight',`
-        <div class="w-start">
-          <div class="w-start-hdr">Starting weight <span style="text-transform:none;letter-spacing:0;font-weight:500">(enter your weight before you started)</span></div>
-          <div class="w-start-row">
-            <input type="date" id="swDate" value="${esc(startWeight.date||'')}" max="${realKey}">
-            <input type="number" id="swValue" inputmode="decimal" step="0.1" placeholder="kg" value="${startWeight.value!=null?startWeight.value:''}">
-            <button id="swSave">Set</button>
-          </div>
-          ${startWeight.value!=null?`<div class="w-start-set">✓ ${startWeight.value} kg · ${startWeight.date?new Date(startWeight.date+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):''}</div>`:''}
+    </div>`,true)}
+  </div>`;
+  const dailyCard=`<div class="card">
+    ${cardHd('daily','Every day · non-negotiables',dailyDone+'/'+DAILY.length,true)}
+    ${cardBody('daily',DAILY.map(it=>itemHtml(it)).join(''),true)}
+  </div>`;
+  const macrosCard=`<div class="card">
+    ${cardHd('macros','Macros · today','',true)}
+    ${cardBody('macros',macroBarsHtml,true)}
+  </div>`;
+  const mealsCard=`<div class="card">
+    ${cardHd('nutrition','Meals · what I ate','',true)}
+    ${cardBody('nutrition',`${mealsHtml}<button class="new-item-btn" id="createMealBtn" style="margin-top:2px">🍱 Create meal — combine foods into one saved meal</button>`,true)}
+  </div>`;
+  const waterCard=`<div class="card">
+    ${cardHd('water','Water','',true)}
+    ${cardBody('water',waterHtml.replace('class="water-section"','class="water-section" style="margin-top:0;padding-top:0;border-top:none"'),true)}
+  </div>`;
+  const planCard=`<div class="card">
+    ${cardHd('plan',"Today's plan",'',true)}
+    ${cardBody('plan',`<div class="plan-today"><div class="pt-label">${pretty(viewDate)}</div><div class="pt-session">${plannedSess?plannedSess.name:'Rest'}</div><div class="pt-tags">${customSessions.map(s=>`<span class="pt-tag${planSession===s.id?' active':''}">${s.name}</span>`).join('')}<span class="pt-tag${planAbs?' active':''}">Abs</span></div></div><button class="plan-edit-toggle" id="planEditToggle">${planEditorOpen?'▲ Hide schedule':'▼ Edit weekly schedule'}</button><div class="plan-editor${planEditorOpen?' open':''}" id="planEditor">${planRows}</div>`,true)}
+  </div>`;
+  const gymCard=`<div class="card">
+    ${cardHd('gym','Gym — session',sess?(gymDone+'/'+gymTotal):'',true)}
+    ${cardBody('gym',seg+train,true)}
+  </div>`;
+  const absCard=`<div class="card">
+    ${cardHd('abs','Abs at home',absToday?'✓ today':'',true)}
+    ${cardBody('abs',`<div class="seg-hint" style="margin-top:-4px;margin-bottom:12px">3–4×/week — floor only, no equipment.</div>${absItems.map(it=>{const on=!!dayState.checked[it.id];const lbl=[it.sets&&it.sets+' sets',it.reps].filter(Boolean).join(' · ')+(it.note?' · '+it.note:'');return `<div class="item ${on?'done':''}" data-id="${it.id}"><div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><div class="item-text"><div class="t">${it.name}</div>${lbl?`<div class="s">${lbl}</div>`:''}</div></div>`;}).join('')}`,true)}
+  </div>`;
+  const weekCard=`<div class="card">
+    ${cardHd('week','This week','',true)}
+    ${cardBody('week','<div class="week" id="week"></div>',true)}
+  </div>`;
+  const weightCard=`<div class="card">
+    ${cardHd('weight','Weight','',true)}
+    ${cardBody('weight',`
+      <div class="w-start">
+        <div class="w-start-hdr">Starting weight <span style="text-transform:none;letter-spacing:0;font-weight:500">(enter your weight before you started)</span></div>
+        <div class="w-start-row">
+          <input type="date" id="swDate" value="${esc(startWeight.date||'')}" max="${realKey}">
+          <input type="number" id="swValue" inputmode="decimal" step="0.1" placeholder="kg" value="${startWeight.value!=null?startWeight.value:''}">
+          <button id="swSave">Set</button>
         </div>
-        <div class="w-divider">Log daily weight</div>
-        <div class="w-entry"><input id="wInput" type="number" inputmode="decimal" step="0.1" placeholder="Today's weight kg"><button id="wLog">Log</button></div>
-        <div id="wBody"></div>`,true)}
+        ${startWeight.value!=null?`<div class="w-start-set">✓ ${startWeight.value} kg · ${startWeight.date?new Date(startWeight.date+'T00:00:00').toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'}):''}</div>`:''}
+      </div>
+      <div class="w-divider">Log daily weight</div>
+      <div class="w-entry"><input id="wInput" type="number" inputmode="decimal" step="0.1" placeholder="Today's weight kg"><button id="wLog">Log</button></div>
+      <div id="wBody"></div>`,true)}
+  </div>`;
+  const calPct=macroGoals.calories?Math.min(100,Math.round(totals.cals/macroGoals.calories*100)):0;
+  const statsCard=`<div class="card">
+    <div class="card-hd open" style="cursor:default">Today at a glance</div>
+    <div class="card-body">
+      <div class="sum-grid">
+        <div class="sum-tile"><div class="st-label">🔥 Calories</div><div class="st-val">${Math.round(totals.cals)}<span class="st-sub"> / ${macroGoals.calories} kcal</span></div><div class="mb-track"><div class="mb-fill" style="width:${calPct}%"></div></div></div>
+        <div class="sum-tile"><div class="st-label">💧 Water</div><div class="st-val">${wDisp}<span class="st-sub"> / ${wTgtDisp}</span></div><div class="mb-track"><div class="mb-fill" style="width:${wpct}%;background:var(--water)"></div></div></div>
+        <div class="sum-tile"><div class="st-label">📅 Days this week</div><div class="st-val"><span id="sumWeekDone">–</span><span class="st-sub"> / 7 complete</span></div></div>
+        <div class="sum-tile"><div class="st-label">✅ Today's tasks</div><div class="st-val">${done}<span class="st-sub"> / ${total}</span></div><div class="mb-track"><div class="mb-fill" style="width:${pct}%"></div></div></div>
+      </div>
     </div>
-  </div>
-  <div class="quote-card" id="quoteCard"></div>
-  <button class="reset" id="resetBtn">Reset this day's ticks</button>
-  <p class="note">Everything saves automatically — flick ◀ ▶ to revisit any day. Use ⚙ Settings to customise your sessions, abs and nutrition goals.</p>`;
+  </div>`;
+
+  // ── Compose page by active tab ──
+  const app=document.getElementById("app");app.className="";
+  if(activeTab==="summary"){
+    app.innerHTML=`<div class="page-grid">
+      <div class="pg-col">${statsCard}${dailyCard}${weekCard}</div>
+      <div class="pg-col">${planCard}<div class="quote-card" id="quoteCard" style="margin-top:14px"></div></div>
+    </div>
+    <button class="reset" id="resetBtn">Reset this day's ticks</button>
+    <p class="note">Everything saves automatically — flick ◀ ▶ to revisit any day. Use the tabs below to switch pages.</p>`;
+  }else if(activeTab==="nutrition"){
+    app.innerHTML=`<div class="page-grid">
+      <div class="pg-col">${macrosCard}${waterCard}</div>
+      <div class="pg-col">${mealsCard}</div>
+    </div>`;
+  }else if(activeTab==="gym"){
+    app.innerHTML=`<div class="page-grid">
+      <div class="pg-col">${gymCard}</div>
+      <div class="pg-col">${absCard}</div>
+    </div>`;
+  }else if(activeTab==="weight"){
+    app.innerHTML=`<div class="page-grid">
+      <div class="pg-col">${photosCard}</div>
+      <div class="pg-col">${weightCard}</div>
+    </div>`;
+  }else if(activeTab==="settings"){
+    app.innerHTML=`<div class="card" style="margin-top:14px"><div id="settingsBody" style="padding-bottom:20px"></div></div>`;
+  }
 
   app.querySelectorAll(".item").forEach(el=>el.addEventListener("click",()=>toggle(el.dataset.id)));
   app.querySelectorAll(".seg button").forEach(el=>el.addEventListener("click",()=>pickSession(el.dataset.sess)));
   document.getElementById("esbSettingsBtn")?.addEventListener("click",openSettings);
-  document.getElementById("resetBtn").addEventListener("click",resetDay);
-  document.getElementById("wLog").addEventListener("click",logWeight);
-  document.getElementById("photoBtn1").addEventListener("click",()=>document.getElementById("photoInput1").click());
-  document.getElementById("photoBtn2").addEventListener("click",()=>document.getElementById("photoInput2").click());
-  document.getElementById("day1LabelInput").addEventListener("change",e=>{day1PhotoLabel=e.target.value||"Before";save("day1PhotoLabel",day1PhotoLabel);});
-  document.getElementById("swSave").addEventListener("click",()=>{
+  document.getElementById("resetBtn")?.addEventListener("click",resetDay);
+  document.getElementById("wLog")?.addEventListener("click",logWeight);
+  document.getElementById("photoBtn1")?.addEventListener("click",()=>document.getElementById("photoInput1").click());
+  document.getElementById("photoBtn2")?.addEventListener("click",()=>document.getElementById("photoInput2").click());
+  document.getElementById("day1LabelInput")?.addEventListener("change",e=>{day1PhotoLabel=e.target.value||"Before";save("day1PhotoLabel",day1PhotoLabel);});
+  document.getElementById("swSave")?.addEventListener("click",()=>{
     const d=document.getElementById("swDate").value;
     const v=parseFloat(document.getElementById("swValue").value);
     if(isNaN(v)||v<=0){alert("Enter a valid weight.");return;}
@@ -915,14 +961,14 @@ function render(){
     document.getElementById("swSave").textContent="Saved ✓";
     setTimeout(()=>{const b=document.getElementById("swSave");if(b)b.textContent="Set";},1500);
   });
-  app.querySelectorAll(".card-hd").forEach(hd=>{hd.addEventListener("click",()=>{const id=hd.dataset.card;const body=document.getElementById("cb-"+id);const nowOpen=hd.classList.contains("open");hd.classList.toggle("open",!nowOpen);body.classList.toggle("hidden",nowOpen);collapsed[id]=nowOpen;});});
-  document.getElementById("planEditToggle").addEventListener("click",()=>{planEditorOpen=!planEditorOpen;document.getElementById("planEditor").classList.toggle("open",planEditorOpen);document.getElementById("planEditToggle").textContent=planEditorOpen?'▲ Hide schedule':'▼ Edit weekly schedule';});
+  app.querySelectorAll(".card-hd[data-card]").forEach(hd=>{hd.addEventListener("click",()=>{const id=hd.dataset.card;const body=document.getElementById("cb-"+id);const nowOpen=hd.classList.contains("open");hd.classList.toggle("open",!nowOpen);body.classList.toggle("hidden",nowOpen);collapsed[id]=nowOpen;});});
+  document.getElementById("planEditToggle")?.addEventListener("click",()=>{planEditorOpen=!planEditorOpen;document.getElementById("planEditor").classList.toggle("open",planEditorOpen);document.getElementById("planEditToggle").textContent=planEditorOpen?'▲ Hide schedule':'▼ Edit weekly schedule';});
   app.querySelectorAll(".plan-sel").forEach(el=>el.addEventListener("change",e=>{const dow=+e.target.dataset.dow;if(!weeklyPlan[dow])weeklyPlan[dow]={session:"rest",abs:false};weeklyPlan[dow].session=e.target.value;save("weeklyPlan",weeklyPlan);refreshPlanToday();}));
   app.querySelectorAll(".plan-abs-btn").forEach(el=>el.addEventListener("click",e=>{const dow=+e.target.dataset.dow;if(!weeklyPlan[dow])weeklyPlan[dow]={session:"rest",abs:false};weeklyPlan[dow].abs=!weeklyPlan[dow].abs;e.target.classList.toggle("on",weeklyPlan[dow].abs);e.target.textContent=weeklyPlan[dow].abs?'Abs ✓':'Abs';save("weeklyPlan",weeklyPlan);refreshPlanToday();}));
   // Water
   app.querySelectorAll(".water-btn").forEach(btn=>btn.addEventListener("click",()=>{dayState.water=(dayState.water||0)+(+btn.dataset.ml);persistDay();render();}));
-  app.querySelector(".water-reset").addEventListener("click",()=>{dayState.water=0;persistDay();render();});
-  const wi=document.getElementById("wInput");if(weights[viewKey]!=null)wi.value=weights[viewKey];
+  app.querySelector(".water-reset")?.addEventListener("click",()=>{dayState.water=0;persistDay();render();});
+  const wi=document.getElementById("wInput");if(wi&&weights[viewKey]!=null)wi.value=weights[viewKey];
   // Food tracker
   app.querySelectorAll(".scan-btn[data-meal]").forEach(b=>b.addEventListener("click",()=>openScanner(b.dataset.meal)));
   app.querySelectorAll(".saved-meal-sel[data-meal]").forEach(sel=>sel.addEventListener("change",()=>{
@@ -949,6 +995,7 @@ function render(){
     save("savedMeals",savedMeals);render();showSettingsToast("Saved to your meals ✓");
   }));
   renderPhotos();renderWeight();renderWeek();renderQuote();checkCelebrate();
+  if(activeTab==="settings")renderSettings();
 }
 
 function refreshPlanToday(){
@@ -995,7 +1042,7 @@ function renderWeight(){const body=document.getElementById("wBody");if(!body)ret
 function renderQuote(){const el=document.getElementById("quoteCard");if(!el)return;const seed=realToday.getFullYear()*10000+((realToday.getMonth()+1)*100)+realToday.getDate();const q=QUOTES[seed%QUOTES.length];el.innerHTML=`<div class="qc-label">Quote of the day</div><div class="qc-text">"${q}"</div><div class="qc-warning">⚠️ Don't let future-you down. Every day you skip makes the next one harder — stay locked in or live with the regret.</div>`;}
 function pad2(n){return String(Math.floor(n)).padStart(2,'0');}
 function tickTimers(){const now=new Date();const mid=new Date(now);mid.setHours(24,0,0,0);let r=Math.max(0,mid-now);const dh=Math.floor(r/3600000);r-=dh*3600000;const dm=Math.floor(r/60000);r-=dm*60000;const ds=Math.floor(r/1000);const td=document.getElementById("timerDay");if(td)td.textContent=pad2(dh)+':'+pad2(dm)+':'+pad2(ds);let r2=Math.max(0,TARGET-now);const tdays=Math.floor(r2/86400000);r2-=tdays*86400000;const th=Math.floor(r2/3600000);r2-=th*3600000;const tm=Math.floor(r2/60000);r2-=tm*60000;const ts=Math.floor(r2/1000);const tt=document.getElementById("timerTarget");if(tt)tt.textContent=tdays+'d '+pad2(th)+':'+pad2(tm)+':'+pad2(ts);}
-async function renderWeek(){const wk=document.getElementById("week");if(!wk)return;const wkStart=new Date(START);wkStart.setDate(START.getDate()+weekIndexOf(viewDate)*7);const labels=["S","M","T","W","T","F","S"];let html="",absCount=0;for(let i=0;i<7;i++){const d=new Date(wkStart);d.setDate(wkStart.getDate()+i);const k=dkey(d);let cls="day-cell",mark="";if(k===viewKey)cls+=" is-view";const data=k===viewKey?dayState:await load(k);if(data&&data.checked){const dc=DAILY.filter(x=>data.checked[x.id]).length;if(dc>=DAILY.length){cls+=" full";mark="✓";}else if(dc>0){cls+=" part";mark=dc;}if(customAbs.some(a=>data.checked[a.id]))absCount++;}html+=`<div class="${cls}" data-key="${k}"><div class="dl">${labels[d.getDay()]}</div><div class="dn">${d.getDate()}</div><div class="dot">${mark}</div></div>`;}wk.innerHTML=html;wk.querySelectorAll(".day-cell").forEach(el=>el.addEventListener("click",()=>jumpTo(el.dataset.key)));const hd=document.querySelector('[data-card="week"]');if(hd){const b=hd.querySelector(".hd-badge");if(b)b.textContent="abs "+absCount+"/4";}}
+async function renderWeek(){const wk=document.getElementById("week");if(!wk)return;const wkStart=new Date(START);wkStart.setDate(START.getDate()+weekIndexOf(viewDate)*7);const labels=["S","M","T","W","T","F","S"];let html="",absCount=0,fullCount=0;for(let i=0;i<7;i++){const d=new Date(wkStart);d.setDate(wkStart.getDate()+i);const k=dkey(d);let cls="day-cell",mark="";if(k===viewKey)cls+=" is-view";const data=k===viewKey?dayState:await load(k);if(data&&data.checked){const dc=DAILY.filter(x=>data.checked[x.id]).length;if(dc>=DAILY.length){cls+=" full";mark="✓";fullCount++;}else if(dc>0){cls+=" part";mark=dc;}if(customAbs.some(a=>data.checked[a.id]))absCount++;}html+=`<div class="${cls}" data-key="${k}"><div class="dl">${labels[d.getDay()]}</div><div class="dn">${d.getDate()}</div><div class="dot">${mark}</div></div>`;}wk.innerHTML=html;wk.querySelectorAll(".day-cell").forEach(el=>el.addEventListener("click",()=>jumpTo(el.dataset.key)));const sw=document.getElementById("sumWeekDone");if(sw)sw.textContent=fullCount;const hd=document.querySelector('[data-card="week"]');if(hd){const b=hd.querySelector(".hd-badge");if(b)b.textContent="abs "+absCount+"/4";}}
 
 // --- Celebration ---
 function checkCelebrate(){const total=barTotal(),done=barDone();if(total>0&&done===total&&!celebrated[viewKey]){celebrated[viewKey]=true;triggerCelebration(calcDayXP(dayState));}}
@@ -1040,20 +1087,21 @@ themeBtn.addEventListener("click",()=>{const dark=!document.body.classList.conta
 // ══════════════════════════════════════════
 // ── Settings Modal ──
 // ══════════════════════════════════════════
-function openSettings(){
-  document.getElementById("settingsModal").classList.remove("hidden");
-  renderSettings();
+let activeTab="summary";
+function setTab(t){
+  activeTab=t;
+  if(t!=="settings"){editingSession=null;editingAbs=false;}
+  document.querySelectorAll("#tabbar button").forEach(b=>b.classList.toggle("active",b.dataset.tab===t));
+  window.scrollTo(0,0);
+  render();
 }
-function closeSettings(){
-  document.getElementById("settingsModal").classList.add("hidden");
-  editingSession=null;editingAbs=false;
-}
+document.querySelectorAll("#tabbar button").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab)));
+function openSettings(){setTab("settings");}
 document.getElementById("settingsBtn").addEventListener("click",openSettings);
-document.getElementById("settingsClose").addEventListener("click",closeSettings);
-document.getElementById("settingsModal").addEventListener("click",e=>{if(e.target===document.getElementById("settingsModal"))closeSettings();});
 
 function renderSettings(){
   const body=document.getElementById("settingsBody");
+  if(!body)return;
 
   // Build session list HTML
   const sessListHtml=customSessions.map(s=>`
@@ -1081,6 +1129,7 @@ function renderSettings(){
   `).join('');
 
   body.innerHTML=`
+    <div class="s-section" style="padding-top:20px"><h2 style="font-size:20px;font-weight:800;margin-bottom:2px">⚙ Settings</h2></div>
     <div class="s-section">
       <h3>Appearance</h3>
       <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Choose a colour theme for the page.</p>
