@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Lock-In Tracker → Aug 12</title>
+<meta name="theme-color" content="#0B0E14">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lock-In">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -548,7 +554,6 @@
     <div class="top-right">
       <span id="syncDot" title="Connecting…" style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#F59E0B;flex-shrink:0;margin-top:2px;"></span>
       <span class="user-chip" id="userChip"></span>
-      <button class="settings-btn" id="settingsBtn">⚙ Settings</button>
       <button class="theme-btn" id="themeBtn">🌙 Dark</button>
       <button class="signout-btn" id="signOutBtn">Sign out</button>
     </div>
@@ -1097,7 +1102,6 @@ function setTab(t){
 }
 document.querySelectorAll("#tabbar button").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab)));
 function openSettings(){setTab("settings");}
-document.getElementById("settingsBtn").addEventListener("click",openSettings);
 
 function renderSettings(){
   const body=document.getElementById("settingsBody");
@@ -1496,6 +1500,9 @@ onAuthStateChanged(auth,async user=>{
   await loadDay();render();
   tickTimers();setInterval(tickTimers,1000);
 });
+
+// PWA install support
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>
 </html>
