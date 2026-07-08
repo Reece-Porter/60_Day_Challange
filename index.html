@@ -253,6 +253,10 @@
   .cb-steps label{font-size:12px;font-weight:700;}
   .cb-steps input{width:92px;font-family:inherit;font-size:13px;font-weight:600;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);text-align:right;}
   .cb-note{font-size:11px;color:var(--muted);}
+  .sync-mini{font-family:inherit;font-size:10px;font-weight:700;padding:3px 9px;border-radius:99px;
+    border:1px solid rgba(var(--accent-raw),.35);background:rgba(var(--accent-raw),.1);color:rgb(var(--accent-raw));
+    cursor:pointer;margin-left:6px;vertical-align:middle;}
+  .sync-mini:hover{background:rgba(var(--accent-raw),.2);}
   /* Macro progress bars */
   .macro-bars{display:flex;flex-direction:column;gap:10px;margin-bottom:18px;}
   .mb-top{display:flex;justify-content:space-between;font-size:12px;font-weight:700;margin-bottom:4px;}
@@ -841,6 +845,7 @@ function render(){
     <div class="cb-steps">
       <label>👟 Steps today</label>
       <input id="stepsInput" type="number" min="0" step="100" value="${stepsToday||''}" placeholder="e.g. 8500">
+      <button class="sync-mini" id="syncStepsNut">⟳ sync</button>
       <span class="cb-note">≈ ${burned} kcal burned walking</span>
     </div>
   </div>`;
@@ -1006,6 +1011,7 @@ function render(){
       <div class="sum-grid">
         <div class="sum-tile"><div class="st-label">🔥 Calories</div><div class="st-val">${Math.round(totals.cals)}<span class="st-sub"> / ${macroGoals.calories} kcal</span></div><div class="mb-track"><div class="mb-fill" style="width:${calPct}%"></div></div><div class="st-sub" style="display:block;margin-top:6px">🚶 +${burned} earned · ${remaining<0?`<span style="color:#e05252">${-remaining} over</span>`:remaining+' left'}</div></div>
         <div class="sum-tile"><div class="st-label">💧 Water</div><div class="st-val">${wDisp}<span class="st-sub"> / ${wTgtDisp}</span></div><div class="mb-track"><div class="mb-fill" style="width:${wpct}%;background:var(--water)"></div></div></div>
+        <div class="sum-tile"><div class="st-label">👟 Steps<button class="sync-mini" id="syncStepsSum">⟳ sync</button></div><div class="st-val">${stepsToday.toLocaleString()}</div><div class="st-sub">≈ ${burned} kcal earned</div></div>
         <div class="sum-tile"><div class="st-label">📅 Days this week</div><div class="st-val"><span id="sumWeekDone">–</span><span class="st-sub"> / 7 complete</span></div></div>
         <div class="sum-tile"><div class="st-label">✅ Today's tasks</div><div class="st-val">${done}<span class="st-sub"> / ${total}</span></div><div class="mb-track"><div class="mb-fill" style="width:${pct}%"></div></div></div>
       </div>
@@ -1068,6 +1074,8 @@ function render(){
     const v=Math.max(0,Math.round(+e.target.value||0));
     dayState.steps=v;persistDay();render();
   });
+  document.getElementById("syncStepsSum")?.addEventListener("click",()=>checkStepsInbox(false));
+  document.getElementById("syncStepsNut")?.addEventListener("click",()=>checkStepsInbox(false));
   const wi=document.getElementById("wInput");if(wi&&weights[viewKey]!=null)wi.value=weights[viewKey];
   // Food tracker
   app.querySelectorAll(".scan-btn[data-meal]").forEach(b=>b.addEventListener("click",()=>openScanner(b.dataset.meal)));
@@ -1679,10 +1687,11 @@ async function checkStepsInbox(silent){
   if(!stepsToken)return;
   try{
     const snap=await getDoc(doc(fsdb,"stepsInbox",stepsToken));
-    if(!snap.exists())return;
+    if(!snap.exists()){if(!silent)showSettingsToast("No synced steps yet — run the Shortcut first");return;}
     const d=snap.data();
     const date=d.date,steps=Math.max(0,Math.round(+d.steps||0));
-    if(!date||!steps)return;
+    if(!date){if(!silent)showSettingsToast("Sync received but the date was blank — check the Shortcut's date token");return;}
+    if(!steps){if(!silent)showSettingsToast("Sync received but steps were 0 — check Health permission for Shortcuts");return;}
     if(date===viewKey){
       if((+dayState.steps||0)!==steps){dayState.steps=steps;persistDay();render();if(!silent)showSettingsToast("Steps synced ✓ "+steps.toLocaleString());}
       else if(!silent)showSettingsToast("Steps already up to date ("+steps.toLocaleString()+")");
