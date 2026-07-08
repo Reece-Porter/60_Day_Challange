@@ -244,13 +244,19 @@
   .mb-fill{height:100%;border-radius:99px;background:var(--done);transition:width .3s;}
   .mb-fill.over{background:#e05252;}
   /* Meal sections */
-  .meal-sec{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px;}
-  .meal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
-  .meal-name{font-size:13px;font-weight:800;}
-  .meal-cals{font-size:11px;color:var(--muted);font-weight:600;}
-  .food-row{display:flex;align-items:center;gap:7px;padding:7px 0;border-top:1px dashed var(--line);}
+  .meal-sec{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:12px;box-shadow:var(--shadow);}
+  .meal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;padding-bottom:8px;border-bottom:1px solid var(--line);}
+  .meal-name{font-size:14px;font-weight:800;letter-spacing:-.01em;}
+  .meal-cals{font-size:12px;color:var(--muted);font-weight:700;}
+  .meal-empty{font-size:12px;color:var(--muted);padding:10px 0 4px;}
+  .meal-sub{display:flex;gap:5px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--line);}
+  .food-row{display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px dashed var(--line);}
+  .food-row:first-of-type{border-top:none;}
   .food-info{flex:1;min-width:0;}
-  .food-nm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .food-nm{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .food-chips{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px;}
+  .fm-chip{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:99px;background:var(--paper);border:1px solid var(--line);color:var(--muted);white-space:nowrap;}
+  .fm-chip.cal{background:rgba(var(--accent-raw),.1);border-color:rgba(var(--accent-raw),.25);color:rgb(var(--accent-raw));}
   .food-macros{font-size:11px;color:var(--muted);}
   .food-serv{width:60px;font-family:inherit;font-size:12px;font-weight:600;padding:5px 6px;border:1px solid var(--line);border-radius:7px;background:var(--paper);color:var(--ink);text-align:right;}
   .food-g{font-size:11px;color:var(--muted);}
@@ -258,9 +264,12 @@
   .food-x:hover{color:#e05252;}
   .food-star.on{color:#F59E0B;}
   .food-star:hover{color:#F59E0B;}
-  .meal-actions{display:flex;gap:6px;margin-top:8px;align-items:center;}
+  .meal-actions{display:flex;gap:6px;margin-top:10px;align-items:center;flex-wrap:wrap;}
   .scan-btn{font-family:inherit;font-size:12px;font-weight:700;padding:7px 12px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);cursor:pointer;white-space:nowrap;}
   .scan-btn:hover{background:var(--line);}
+  .scan-btn.big{flex:1 1 100%;font-size:14px;padding:12px 16px;border-radius:10px;
+    background:rgba(var(--accent-raw),.1);border:1.5px solid rgba(var(--accent-raw),.3);color:rgb(var(--accent-raw));}
+  .scan-btn.big:hover{background:rgba(var(--accent-raw),.18);}
   .saved-meal-sel{flex:1;min-width:0;font-family:inherit;font-size:12px;padding:7px 8px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);}
   /* Scan modal */
   #qrReader{width:100%;border-radius:12px;overflow:hidden;background:#000;min-height:100px;}
@@ -546,6 +555,21 @@
   </div>
 </div>
 
+<!-- ── Challenge Setup Modal (first login) ── -->
+<div class="settings-modal hidden" id="challengeModal">
+  <div class="settings-inner" style="max-width:420px">
+    <div class="settings-hdr"><h2>🎯 Set your deadline</h2></div>
+    <div class="s-section" style="padding-bottom:24px">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px;line-height:1.55">Welcome! Pick the day your challenge starts and the date you're working towards — the countdown timers, day numbers and week tracking are all built around these. You can change them any time in ⚙️ Settings.</p>
+      <div class="e-label">Start date</div>
+      <input class="e-input" type="date" id="chStart">
+      <div class="e-label">Deadline</div>
+      <input class="e-input" type="date" id="chTarget">
+      <button class="s-save-btn" id="chSave">Start the clock ⏱</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Main App ── -->
 <div id="mainApp" style="display:none">
 <header>
@@ -560,7 +584,7 @@
   </div>
   <div class="header-top-row">
     <div class="header-count">
-      <div class="count-wrap"><span class="count" id="count">–</span><span class="count-label">days left<br>to Aug 12</span></div>
+      <div class="count-wrap"><span class="count" id="count">–</span><span class="count-label" id="countLabel">days left<br>to Aug 12</span></div>
     </div>
     <div class="header-xp">
       <div class="xp-level-row">
@@ -574,7 +598,7 @@
   </div>
   <div class="timers">
     <div class="timer-box"><div class="tb-label">Today ends in</div><div class="tb-val" id="timerDay">––:––:––</div><div class="tb-sub">don't waste today</div></div>
-    <div class="timer-box"><div class="tb-label">Aug 12 in</div><div class="tb-val" id="timerTarget">––d ––:––:––</div><div class="tb-sub">the deadline is real</div></div>
+    <div class="timer-box"><div class="tb-label" id="timerTargetLabel">Aug 12 in</div><div class="tb-val" id="timerTarget">––d ––:––:––</div><div class="tb-sub">the deadline is real</div></div>
   </div>
   <div class="progress-track"><div class="progress-fill" id="progFill"></div></div>
   <div class="progress-text" id="progText">Loading…</div>
@@ -611,7 +635,9 @@ const auth=getAuth(fbApp);
 const gProvider=new GoogleAuthProvider();
 let DATA_DOC=null;
 
-const START=new Date(2026,5,11),TARGET=new Date(2026,7,12),KEY="recomp:";
+// Challenge dates — defaults, overridable per user via Settings / first-login setup
+let START=new Date(2026,5,11),TARGET=new Date(2026,7,12);
+const KEY="recomp:";
 
 // Fixed daily items (non-nutrition)
 const DAILY=[
@@ -678,8 +704,17 @@ const LEVELS=[{min:0,name:"Rookie"},{min:100,name:"Consistent"},{min:300,name:"D
 const QUOTES=["The body achieves what the mind believes.","You don't have to be great to start, but you have to start to be great.","Discipline is doing what needs to be done even when you don't feel like it.","Every rep, every meal, every step — it all compounds.","The pain you feel today will be the strength you feel tomorrow.","Consistency is more important than intensity.","You are one workout away from a better mood.","Fall in love with taking care of your body.","Small steps every day lead to massive results.","Your only competition is who you were yesterday.","Success is the sum of small efforts repeated day in and day out.","The hardest lift is getting off the couch.","Eat well, train hard, sleep enough. Repeat.","Don't wish for a good body. Work for it.","It never gets easier — you just get stronger.","Push yourself because no one else is going to do it for you.","Motivation gets you started. Habit keeps you going.","No shortcuts. No excuses. No regrets.","Your future self is watching you right now through memories.","One day or day one — you decide.","The only bad workout is the one that didn't happen.","Be stronger than your excuses.","What seems hard now will one day be your warm-up.","Results happen over time, not overnight.","You are your only limit.","Make yourself proud.","Today's effort is tomorrow's result.","If it doesn't challenge you, it doesn't change you.","Champions keep going when they have nothing left.","Don't stop when you're tired — stop when you're done.","A year from now you'll wish you had started today.","Show up. Do the work. Trust the process.","Be the person your future self thanks.","Iron sharpens iron.","Pressure makes diamonds.","Your comeback is always stronger than your setback.","Stay patient and trust your journey.","60 days of locked in beats a lifetime of almost.","Earn your rest days.","Obsessed is a word the lazy use to describe the dedicated.","You didn't come this far to only come this far.","Hard days build strong people.","Sweat is just fat crying.","Train insane or remain the same.","The gym is a privilege, not a punishment.","Success is built one rep, one meal, one night of sleep at a time.","Dedication sees dreams come true.","Limits are for people who have them.","Strength doesn't come from what you can do — it comes from overcoming what you thought you couldn't.","The grind doesn't stop."];
 
 // State
-const realToday=new Date(),realKey=dkey(realToday),day1Key=dkey(START);
-const earliest=midnight(realToday)<START?midnight(realToday):START;
+const realToday=new Date(),realKey=dkey(realToday);
+let day1Key=dkey(START);
+let earliest=midnight(realToday)<START?midnight(realToday):START;
+function applyChallengeDates(){
+  day1Key=dkey(START);
+  earliest=midnight(realToday)<START?midnight(realToday):START;
+  const cl=document.getElementById("countLabel");
+  if(cl)cl.innerHTML="days left<br>to "+TARGET.toLocaleDateString(undefined,{day:"numeric",month:"short"});
+  const tl=document.getElementById("timerTargetLabel");
+  if(tl)tl.textContent=TARGET.toLocaleDateString(undefined,{day:"numeric",month:"short"})+" in";
+}
 let viewDate=new Date(realToday),viewKey=dkey(viewDate);
 let dayState={session:null,checked:{},food:"",water:0,meals:{}};
 let savedMeals=[];
@@ -783,11 +818,29 @@ function render(){
   const recentOpts=recentFoods.map((f,i)=>`<option value="${i}">${esc(f.name)}${f.brand?' — '+esc(f.brand):''}</option>`).join('');
   const mealsHtml=MEAL_KEYS.map(([key,label])=>{
     const list=(dayState.meals&&dayState.meals[key])||[];
-    const secCals=list.reduce((a,f)=>a+foodMacros(f).cals,0);
+    const sec=list.reduce((a,f)=>{const m=foodMacros(f);a.cals+=m.cals;a.p+=m.protein;a.f+=m.fat;a.c+=m.carbs;return a;},{cals:0,p:0,f:0,c:0});
     const rows=list.map((f,i)=>{const m=foodMacros(f);const saved=savedMeals.some(s=>s.name===f.name&&(s.barcode||'')===(f.barcode||''));
-      return `<div class="food-row"><div class="food-info"><div class="food-nm">${esc(f.name)}</div><div class="food-macros">${Math.round(m.cals)} kcal · P ${m.protein.toFixed(1)}g · F ${m.fat.toFixed(1)}g · C ${m.carbs.toFixed(1)}g</div></div><input class="food-serv" type="number" min="1" value="${f.servingG}" data-meal="${key}" data-fi="${i}" title="Serving size (g)"><span class="food-g">g</span><button class="food-star${saved?' on':''}" data-meal="${key}" data-fi="${i}" title="Save to my meals">★</button><button class="food-x" data-meal="${key}" data-fi="${i}" title="Remove">×</button></div>`;
+      return `<div class="food-row">
+        <div class="food-info">
+          <div class="food-nm">${esc(f.name)}</div>
+          <div class="food-chips"><span class="fm-chip cal">🔥 ${Math.round(m.cals)}</span><span class="fm-chip">P ${m.protein.toFixed(1)}g</span><span class="fm-chip">F ${m.fat.toFixed(1)}g</span><span class="fm-chip">C ${m.carbs.toFixed(1)}g</span></div>
+        </div>
+        <input class="food-serv" type="number" min="1" value="${f.servingG}" data-meal="${key}" data-fi="${i}" title="Serving size (g)"><span class="food-g">g</span>
+        <button class="food-star${saved?' on':''}" data-meal="${key}" data-fi="${i}" title="Save to my meals">★</button>
+        <button class="food-x" data-meal="${key}" data-fi="${i}" title="Remove">×</button>
+      </div>`;
     }).join('');
-    return `<div class="meal-sec"><div class="meal-hdr"><span class="meal-name">${label}</span><span class="meal-cals">${Math.round(secCals)} kcal</span></div>${rows}<div class="meal-actions"><button class="scan-btn" data-meal="${key}">📷 Scan</button>${recentFoods.length?`<select class="recent-food-sel" data-meal="${key}"><option value="">🕐 Recent…</option>${recentOpts}</select>`:''}${savedMeals.length?`<select class="saved-meal-sel" data-meal="${key}"><option value="">🍱 Saved…</option>${savedOpts}</select>`:''}</div></div>`;
+    const sub=list.length?`<div class="meal-sub"><span class="fm-chip cal">🔥 ${Math.round(sec.cals)} kcal</span><span class="fm-chip">P ${sec.p.toFixed(0)}g</span><span class="fm-chip">F ${sec.f.toFixed(0)}g</span><span class="fm-chip">C ${sec.c.toFixed(0)}g</span></div>`:'';
+    return `<div class="meal-sec">
+      <div class="meal-hdr"><span class="meal-name">${label}</span><span class="meal-cals">${list.length?Math.round(sec.cals)+' kcal':'nothing logged yet'}</span></div>
+      ${rows||'<div class="meal-empty">Nothing eaten yet — scan a barcode or pick a previous food.</div>'}
+      ${sub}
+      <div class="meal-actions">
+        <button class="scan-btn big" data-meal="${key}">📷 Scan barcode</button>
+        ${recentFoods.length?`<select class="recent-food-sel" data-meal="${key}"><option value="">🕐 Recent…</option>${recentOpts}</select>`:''}
+        ${savedMeals.length?`<select class="saved-meal-sel" data-meal="${key}"><option value="">🍱 Saved…</option>${savedOpts}</select>`:''}
+      </div>
+    </div>`;
   }).join('');
   const absItems=customAbs;
   const absToday=customAbs.some(a=>dayState.checked[a.id]);
@@ -1135,6 +1188,15 @@ function renderSettings(){
   body.innerHTML=`
     <div class="s-section" style="padding-top:20px"><h2 style="font-size:20px;font-weight:800;margin-bottom:2px">⚙ Settings</h2></div>
     <div class="s-section">
+      <h3>Challenge Dates</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Your start date and deadline — the countdown timers, day numbers and weeks all follow these.</p>
+      <div class="macro-grid">
+        <div class="macro-field"><label>Start date</label><input type="date" id="set_chStart" value="${dkey(START)}"></div>
+        <div class="macro-field"><label>Deadline</label><input type="date" id="set_chTarget" value="${dkey(TARGET)}"></div>
+      </div>
+      <button class="s-save-btn" id="saveChallengeBtn">Save Challenge Dates</button>
+    </div>
+    <div class="s-section">
       <h3>Appearance</h3>
       <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Choose a colour theme for the page.</p>
       <div class="theme-swatches">
@@ -1191,6 +1253,15 @@ function renderSettings(){
       `).join(''):'<p style="font-size:13px;color:var(--muted);padding-bottom:6px">No saved meals yet — scan a food and tick "Save to my meals", or tap the ★ next to a logged food.</p>'}
     </div>
   `;
+
+  // Challenge dates
+  body.querySelector("#saveChallengeBtn").addEventListener("click",()=>{
+    const s=body.querySelector("#set_chStart").value,t=body.querySelector("#set_chTarget").value;
+    if(!s||!t){alert("Pick both dates.");return;}
+    if(t<=s){alert("The deadline must be after the start date.");return;}
+    START=new Date(s+"T00:00:00");TARGET=new Date(t+"T00:00:00");
+    save("challenge",{start:s,target:t});applyChallengeDates();render();showSettingsToast("Challenge dates saved ✓");
+  });
 
   // Saved meals delete
   body.querySelectorAll(".del-saved-btn").forEach(btn=>btn.addEventListener("click",()=>{
@@ -1316,6 +1387,8 @@ function pushRecent(f){
 }
 function startCamera(){
   if(typeof Html5Qrcode==="undefined"){document.getElementById("scanStatus").textContent="Camera scanner unavailable — type the barcode number below.";return;}
+  const onScan=code=>{stopCamera();lookupBarcode(code);};
+  const fail=()=>{qrScanner=null;document.getElementById("scanStatus").textContent="Camera unavailable — type the barcode number below.";};
   try{
     // Product barcodes are 1D (EAN/UPC) — declare formats explicitly and use the
     // browser's native BarcodeDetector where available (much more reliable than the JS fallback)
@@ -1326,16 +1399,18 @@ function startCamera(){
       Html5QrcodeSupportedFormats.QR_CODE];
     qrScanner=new Html5Qrcode("qrReader",{formatsToSupport:fmts,verbose:false,
       experimentalFeatures:{useBarCodeDetectorIfSupported:true}});
+    // First try a high-res wide-box config; if the device rejects it, retry with plain defaults.
     qrScanner.start(
       {facingMode:"environment"},
-      {fps:15,
-       // wide, short scan box suits 1D barcodes
-       qrbox:(vw,vh)=>({width:Math.min(340,Math.floor(vw*.92)),height:Math.max(110,Math.min(160,Math.floor(vh*.45)))}),
-       aspectRatio:1.777,
-       videoConstraints:{facingMode:"environment",width:{ideal:1920},height:{ideal:1080}}},
-      code=>{stopCamera();lookupBarcode(code);},()=>{})
-      .catch(()=>{qrScanner=null;document.getElementById("scanStatus").textContent="Camera unavailable — type the barcode number below.";});
-  }catch(e){qrScanner=null;document.getElementById("scanStatus").textContent="Camera unavailable — type the barcode number below.";}
+      {fps:12,
+       qrbox:(vw,vh)=>({width:Math.min(320,Math.floor(vw*.9)),height:Math.max(100,Math.min(150,Math.floor(vh*.5)))}),
+       videoConstraints:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}}},
+      onScan,()=>{})
+      .catch(()=>{
+        try{qrScanner.start({facingMode:"environment"},{fps:10},onScan,()=>{}).catch(fail);}
+        catch(e){fail();}
+      });
+  }catch(e){fail();}
 }
 function stopCamera(){if(qrScanner){const q=qrScanner;qrScanner=null;try{q.stop().then(()=>{try{q.clear();}catch(e){}}).catch(()=>{});}catch(e){}}}
 function closeScanner(){stopCamera();document.getElementById("scanModal").classList.add("hidden");scanMeal=null;scanProduct=null;}
@@ -1456,6 +1531,24 @@ function renderBuilder(){
 document.getElementById("builderClose").addEventListener("click",closeBuilder);
 document.getElementById("builderModal").addEventListener("click",e=>{if(e.target===document.getElementById("builderModal"))closeBuilder();});
 
+// ── Challenge setup (first login) ──
+function openChallengeSetup(){
+  document.getElementById("chStart").value=realKey;
+  const d=new Date(realToday);d.setDate(d.getDate()+60);
+  document.getElementById("chTarget").value=dkey(d);
+  document.getElementById("challengeModal").classList.remove("hidden");
+}
+document.getElementById("chSave").addEventListener("click",()=>{
+  const s=document.getElementById("chStart").value,t=document.getElementById("chTarget").value;
+  if(!s||!t){alert("Pick both dates.");return;}
+  if(t<=s){alert("The deadline must be after the start date.");return;}
+  START=new Date(s+"T00:00:00");TARGET=new Date(t+"T00:00:00");
+  save("challenge",{start:s,target:t});
+  applyChallengeDates();
+  document.getElementById("challengeModal").classList.add("hidden");
+  render();
+});
+
 // ── Auth ──
 let authMode='signin';
 document.getElementById("tabSignin").addEventListener("click",()=>{authMode='signin';document.getElementById("tabSignin").classList.add("active");document.getElementById("tabSignup").classList.remove("active");document.getElementById("authSubmit").textContent="Sign In";document.getElementById("authError").textContent="";});
@@ -1470,7 +1563,7 @@ document.getElementById("authSubmit").addEventListener("click",async()=>{
 });
 document.getElementById("authPassword").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("authSubmit").click();});
 document.getElementById("authGoogle").addEventListener("click",async()=>{authErr("");try{await signInWithPopup(auth,gProvider);}catch(e){authErr(e.code==='auth/popup-closed-by-user'?'Sign-in cancelled.':e.message);}});
-document.getElementById("signOutBtn").addEventListener("click",async()=>{await signOut(auth);_cache=null;DATA_DOC=null;dayState={session:null,checked:{},food:"",water:0,meals:{}};savedMeals=[];recentFoods=[];builderItems=[];builderName="";weights={};photoCache={};startWeight={value:null,date:"",label:""};day1PhotoLabel="Before";weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];macroGoals={...DEFAULT_MACRO_GOALS};xpData={total:0,days:{}};celebrated={};applyColorTheme("default");document.getElementById("mainApp").style.display="none";document.getElementById("authScreen").style.display="flex";document.getElementById("authEmail").value="";document.getElementById("authPassword").value="";});
+document.getElementById("signOutBtn").addEventListener("click",async()=>{await signOut(auth);_cache=null;DATA_DOC=null;dayState={session:null,checked:{},food:"",water:0,meals:{}};savedMeals=[];recentFoods=[];builderItems=[];builderName="";START=new Date(2026,5,11);TARGET=new Date(2026,7,12);applyChallengeDates();weights={};photoCache={};startWeight={value:null,date:"",label:""};day1PhotoLabel="Before";weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];macroGoals={...DEFAULT_MACRO_GOALS};xpData={total:0,days:{}};celebrated={};applyColorTheme("default");document.getElementById("mainApp").style.display="none";document.getElementById("authScreen").style.display="flex";document.getElementById("authEmail").value="";document.getElementById("authPassword").value="";});
 
 // ── Auth State ──
 async function migrateOldData(){try{const userSnap=await getDoc(DATA_DOC);if(userSnap.exists()&&Object.keys(userSnap.data()).length>0)return false;const oldSnap=await getDoc(doc(fsdb,'recomp','main'));if(!oldSnap.exists())return false;const oldData=oldSnap.data();await setDoc(DATA_DOC,oldData);_cache={...oldData};return true;}catch(e){return false;}}
@@ -1484,6 +1577,11 @@ onAuthStateChanged(auth,async user=>{
   document.getElementById("app").innerHTML='<div class="loading">Loading your data…</div>';
   await migrateOldData();
   const t=await load("theme");applyTheme(t==="dark");
+  const isNewUser=Object.keys(_cache||{}).length===0;
+  const ch=await load("challenge");
+  if(ch&&ch.start&&ch.target){START=new Date(ch.start+"T00:00:00");TARGET=new Date(ch.target+"T00:00:00");}
+  else{START=new Date(2026,5,11);TARGET=new Date(2026,7,12);}
+  applyChallengeDates();
   const ct=await load("colorTheme");applyColorTheme(ct||"default");
   const w=await load("weights");weights=w||{};
   const sw=await load("startWeight");if(sw&&sw.value!=null)startWeight=sw;
@@ -1499,6 +1597,7 @@ onAuthStateChanged(auth,async user=>{
   const xp=await load("xpData");if(xp)xpData=xp;
   await loadDay();render();
   tickTimers();setInterval(tickTimers,1000);
+  if(isNewUser&&!(ch&&ch.target))openChallengeSetup();
 });
 
 // PWA install support
