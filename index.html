@@ -97,14 +97,45 @@
   .timer-box .tb-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);}
   .timer-box .tb-val{font-size:20px;font-weight:800;letter-spacing:-.02em;margin-top:3px;font-variant-numeric:tabular-nums;}
   .timer-box .tb-sub{font-size:11px;color:var(--muted);margin-top:2px;}
-  /* Grid */
+  /* Grid — phone: single column (default) */
   .page-grid{display:grid;grid-template-columns:1fr;gap:0;margin-top:0;}
   .pg-col{display:flex;flex-direction:column;}
+  /* Small phones */
+  @media(max-width:480px){
+    #mainApp{padding:12px 12px 48px;}
+    .count{font-size:40px;}
+    .count-label{font-size:12px;}
+    .timer-box{min-width:120px;padding:8px 10px;}
+    .timer-box .tb-val{font-size:16px;}
+    .top-right{gap:5px;}
+    .theme-btn,.signout-btn,.settings-btn{font-size:11px;padding:5px 9px;}
+    .user-chip{max-width:70px;}
+    .card-body{padding:12px;}
+    .card-hd{padding:12px;}
+    .sr-grid{grid-template-columns:repeat(2,1fr);}
+    .meal-actions{flex-wrap:wrap;}
+    .saved-meal-sel{width:100%;flex-basis:100%;}
+    .w-start-row{flex-wrap:wrap;}
+    .settings-modal{padding:10px;}
+  }
+  /* Tablet: two columns */
   @media(min-width:768px){
     .page-grid{grid-template-columns:1fr 1fr;gap:14px;align-items:start;margin-top:14px;}
     .pg-full{grid-column:1/-1;}
     .pg-col .card{margin-top:14px;} .pg-col .card:first-child{margin-top:0;}
     .pg-full .card{margin-top:0;}
+  }
+  /* Desktop: more breathing room, larger type */
+  @media(min-width:1100px){
+    #mainApp{padding:32px 36px 80px;max-width:1280px;}
+    .page-grid{gap:22px;}
+    .pg-col .card{margin-top:22px;}
+    .card-hd{padding:16px 20px;font-size:15px;}
+    .card-body{padding:20px;}
+    .count{font-size:64px;}
+    .timer-box .tb-val{font-size:24px;}
+    .header-top-row{gap:32px;}
+    .nav button{width:46px;height:46px;}
   }
   /* Cards */
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:14px;}
@@ -1158,8 +1189,22 @@ function openScanner(meal){
 function startCamera(){
   if(typeof Html5Qrcode==="undefined"){document.getElementById("scanStatus").textContent="Camera scanner unavailable — type the barcode number below.";return;}
   try{
-    qrScanner=new Html5Qrcode("qrReader");
-    qrScanner.start({facingMode:"environment"},{fps:10,qrbox:{width:250,height:150}},
+    // Product barcodes are 1D (EAN/UPC) — declare formats explicitly and use the
+    // browser's native BarcodeDetector where available (much more reliable than the JS fallback)
+    const fmts=[
+      Html5QrcodeSupportedFormats.EAN_13,Html5QrcodeSupportedFormats.EAN_8,
+      Html5QrcodeSupportedFormats.UPC_A,Html5QrcodeSupportedFormats.UPC_E,
+      Html5QrcodeSupportedFormats.CODE_128,Html5QrcodeSupportedFormats.CODE_39,
+      Html5QrcodeSupportedFormats.QR_CODE];
+    qrScanner=new Html5Qrcode("qrReader",{formatsToSupport:fmts,verbose:false,
+      experimentalFeatures:{useBarCodeDetectorIfSupported:true}});
+    qrScanner.start(
+      {facingMode:"environment"},
+      {fps:15,
+       // wide, short scan box suits 1D barcodes
+       qrbox:(vw,vh)=>({width:Math.min(340,Math.floor(vw*.92)),height:Math.max(110,Math.min(160,Math.floor(vh*.45)))}),
+       aspectRatio:1.777,
+       videoConstraints:{facingMode:"environment",width:{ideal:1920},height:{ideal:1080}}},
       code=>{stopCamera();lookupBarcode(code);},()=>{})
       .catch(()=>{qrScanner=null;document.getElementById("scanStatus").textContent="Camera unavailable — type the barcode number below.";});
   }catch(e){qrScanner=null;document.getElementById("scanStatus").textContent="Camera unavailable — type the barcode number below.";}
