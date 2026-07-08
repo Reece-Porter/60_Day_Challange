@@ -1707,11 +1707,15 @@ async function checkStepsInbox(silent){
     const rawDate=String(d.date||"").trim(),steps=Math.max(0,Math.round(+d.steps||0));
     if(!rawDate){if(!silent)showSettingsToast("Sync received but the date was blank — check the Shortcut's date token");return;}
     if(!steps){if(!silent)showSettingsToast("Sync received but steps were 0 — check Health permission for Shortcuts");return;}
-    // Normalise the Shortcut's local calendar date to the app's day key
-    // (the app keys days in UTC, the Shortcut sends the phone's local date)
+    // Normalise whatever date format the Shortcut sent to the app's day key.
+    // Accepts "2026-07-08" as well as full datetimes like "Wed, 08 Jul 2026 15:31:02 +0100".
     let key=rawDate;
-    const parsed=new Date(rawDate+"T12:00:00");
-    if(!isNaN(parsed))key=dkey(parsed);
+    let parsed=rawDate.length<=10?new Date(rawDate+"T12:00:00"):new Date(rawDate);
+    if(isNaN(parsed))parsed=new Date(rawDate);
+    if(!isNaN(parsed)){
+      // use the local calendar day at noon so timezones/DST can't shift the day
+      key=dkey(new Date(parsed.getFullYear(),parsed.getMonth(),parsed.getDate(),12));
+    }
     if(key===viewKey){
       dayState.steps=steps;persistDay();updateXPAfterFood();render();
       if(!silent)showSettingsToast("Steps synced ✓ "+steps.toLocaleString());
