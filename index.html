@@ -236,6 +236,11 @@
     border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink);cursor:pointer;}
   .water-btn:hover{background:var(--line);}
   .water-reset{font-family:inherit;font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;margin-left:auto;}
+  /* Health sync */
+  .sync-box{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;background:var(--paper);
+    border:1px solid var(--line);border-radius:8px;padding:10px;word-break:break-all;margin-bottom:8px;user-select:all;color:var(--ink);}
+  .sync-steps{font-size:13px;color:var(--muted);line-height:1.75;padding-left:18px;margin:6px 0 14px;}
+  .sync-steps b{color:var(--ink);}
   /* Calorie balance */
   .cal-balance{background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:16px;}
   .cb-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
@@ -1278,6 +1283,28 @@ function renderSettings(){
     </div>
 
     <div class="s-section">
+      <h3>Apple Health Steps Sync</h3>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Send your iPhone's real step count to the app automatically every evening using the Shortcuts app. One-time setup — after that it runs by itself.</p>
+      <div class="e-label">1 · Your personal sync URL (keep it private)</div>
+      <div class="sync-box">${stepsToken?`https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/stepsInbox/${stepsToken}?key=${firebaseConfig.apiKey}`:'Generating…'}</div>
+      <button class="s-btn primary" id="copySyncUrl">Copy URL</button>
+      <div class="e-label" style="margin-top:16px">2 · Request body template</div>
+      <div class="sync-box">{"fields":{"steps":{"integerValue":"STEPS_HERE"},"date":{"stringValue":"DATE_HERE"}}}</div>
+      <button class="s-btn primary" id="copySyncBody">Copy body template</button>
+      <div class="e-label" style="margin-top:16px">3 · Build the Shortcut (once)</div>
+      <ol class="sync-steps">
+        <li>Open <b>Shortcuts</b> on your iPhone → ＋ to create a new shortcut</li>
+        <li>Add <b>Find Health Samples</b> — Type: <b>Steps</b>, add filter <b>Start Date · is today</b>, Group By: <b>Day</b></li>
+        <li>Add <b>Format Date</b> — Date: <b>Current Date</b>, Format: <b>Custom</b> → <b>yyyy-MM-dd</b></li>
+        <li>Add <b>Text</b> — paste the body template, then replace <b>STEPS_HERE</b> with the <b>Health Samples</b> variable and <b>DATE_HERE</b> with the <b>Formatted Date</b> variable</li>
+        <li>Add <b>Get Contents of URL</b> — paste your sync URL, tap ▸ Show More: Method <b>PATCH</b>, Headers: <b>Content-Type = application/json</b>, Request Body: <b>File</b> → choose the <b>Text</b></li>
+        <li>Run it once to grant Health &amp; network permissions</li>
+        <li>Go to <b>Automation</b> tab → ＋ → <b>Time of Day</b> (e.g. 21:00, Daily) → select your shortcut → turn <b>ON "Run Immediately"</b></li>
+      </ol>
+      <button class="s-save-btn" id="syncNowBtn">Check for synced steps now</button>
+    </div>
+
+    <div class="s-section">
       <h3>Saved Meals</h3>
       ${savedMeals.length?savedMeals.map((s,i)=>`
         <div class="sess-item">
@@ -1299,6 +1326,18 @@ function renderSettings(){
     START=new Date(s+"T00:00:00");TARGET=new Date(t+"T00:00:00");
     save("challenge",{start:s,target:t});applyChallengeDates();render();showSettingsToast("Challenge dates saved ✓");
   });
+
+  // Health sync
+  body.querySelector("#copySyncUrl")?.addEventListener("click",()=>{
+    if(!stepsToken)return;
+    navigator.clipboard.writeText(`https://firestore.googleapis.com/v1/projects/${firebaseConfig.projectId}/databases/(default)/documents/stepsInbox/${stepsToken}?key=${firebaseConfig.apiKey}`)
+      .then(()=>showSettingsToast("Sync URL copied ✓"));
+  });
+  body.querySelector("#copySyncBody")?.addEventListener("click",()=>{
+    navigator.clipboard.writeText('{"fields":{"steps":{"integerValue":"STEPS_HERE"},"date":{"stringValue":"DATE_HERE"}}}')
+      .then(()=>showSettingsToast("Body template copied ✓"));
+  });
+  body.querySelector("#syncNowBtn")?.addEventListener("click",()=>checkStepsInbox(false));
 
   // Saved meals delete
   body.querySelectorAll(".del-saved-btn").forEach(btn=>btn.addEventListener("click",()=>{
@@ -1625,6 +1664,39 @@ function renderBuilder(){
 document.getElementById("builderClose").addEventListener("click",closeBuilder);
 document.getElementById("builderModal").addEventListener("click",e=>{if(e.target===document.getElementById("builderModal"))closeBuilder();});
 
+// ── Apple Health steps sync (via iOS Shortcut → Firestore inbox) ──
+let stepsToken=null;
+async function ensureStepsToken(){
+  if(stepsToken)return stepsToken;
+  let t=await load("stepsToken");
+  if(!t){
+    t=Array.from(crypto.getRandomValues(new Uint8Array(24))).map(b=>b.toString(16).padStart(2,"0")).join("");
+    await save("stepsToken",t);
+  }
+  stepsToken=t;return t;
+}
+async function checkStepsInbox(silent){
+  if(!stepsToken)return;
+  try{
+    const snap=await getDoc(doc(fsdb,"stepsInbox",stepsToken));
+    if(!snap.exists())return;
+    const d=snap.data();
+    const date=d.date,steps=Math.max(0,Math.round(+d.steps||0));
+    if(!date||!steps)return;
+    if(date===viewKey){
+      if((+dayState.steps||0)!==steps){dayState.steps=steps;persistDay();render();if(!silent)showSettingsToast("Steps synced ✓ "+steps.toLocaleString());}
+      else if(!silent)showSettingsToast("Steps already up to date ("+steps.toLocaleString()+")");
+    }else{
+      const ds=await load(date);
+      const st=ds||{session:null,checked:{},food:"",water:0,meals:{}};
+      if((+st.steps||0)!==steps){st.steps=steps;await save(date,st);}
+      if(!silent)showSettingsToast("Steps synced ✓ "+steps.toLocaleString()+" for "+date);
+    }
+  }catch(e){if(!silent)showSettingsToast("Sync check failed — try again");}
+}
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&stepsToken)checkStepsInbox(true);});
+setInterval(()=>{if(stepsToken)checkStepsInbox(true);},10*60*1000);
+
 // ── Challenge setup (first login) ──
 function openChallengeSetup(){
   document.getElementById("chStart").value=realKey;
@@ -1657,7 +1729,7 @@ document.getElementById("authSubmit").addEventListener("click",async()=>{
 });
 document.getElementById("authPassword").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("authSubmit").click();});
 document.getElementById("authGoogle").addEventListener("click",async()=>{authErr("");try{await signInWithPopup(auth,gProvider);}catch(e){authErr(e.code==='auth/popup-closed-by-user'?'Sign-in cancelled.':e.message);}});
-document.getElementById("signOutBtn").addEventListener("click",async()=>{await signOut(auth);_cache=null;DATA_DOC=null;dayState={session:null,checked:{},food:"",water:0,meals:{}};savedMeals=[];recentFoods=[];builderItems=[];builderName="";START=new Date(2026,5,11);TARGET=new Date(2026,7,12);applyChallengeDates();weights={};photoCache={};startWeight={value:null,date:"",label:""};day1PhotoLabel="Before";weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];macroGoals={...DEFAULT_MACRO_GOALS};xpData={total:0,days:{}};celebrated={};applyColorTheme("default");document.getElementById("mainApp").style.display="none";document.getElementById("authScreen").style.display="flex";document.getElementById("authEmail").value="";document.getElementById("authPassword").value="";});
+document.getElementById("signOutBtn").addEventListener("click",async()=>{await signOut(auth);_cache=null;DATA_DOC=null;dayState={session:null,checked:{},food:"",water:0,meals:{}};savedMeals=[];recentFoods=[];builderItems=[];builderName="";stepsToken=null;START=new Date(2026,5,11);TARGET=new Date(2026,7,12);applyChallengeDates();weights={};photoCache={};startWeight={value:null,date:"",label:""};day1PhotoLabel="Before";weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];macroGoals={...DEFAULT_MACRO_GOALS};xpData={total:0,days:{}};celebrated={};applyColorTheme("default");document.getElementById("mainApp").style.display="none";document.getElementById("authScreen").style.display="flex";document.getElementById("authEmail").value="";document.getElementById("authPassword").value="";});
 
 // ── Auth State ──
 async function migrateOldData(){try{const userSnap=await getDoc(DATA_DOC);if(userSnap.exists()&&Object.keys(userSnap.data()).length>0)return false;const oldSnap=await getDoc(doc(fsdb,'recomp','main'));if(!oldSnap.exists())return false;const oldData=oldSnap.data();await setDoc(DATA_DOC,oldData);_cache={...oldData};return true;}catch(e){return false;}}
@@ -1689,8 +1761,11 @@ onAuthStateChanged(auth,async user=>{
   const sm=await load("savedMeals");savedMeals=sm||[];
   const rf=await load("recentFoods");recentFoods=rf||[];
   const xp=await load("xpData");if(xp)xpData=xp;
-  await loadDay();render();
+  await loadDay();
+  await ensureStepsToken();
+  render();
   tickTimers();setInterval(tickTimers,1000);
+  checkStepsInbox(true);
   if(isNewUser&&!(ch&&ch.target))openChallengeSetup();
 });
 
