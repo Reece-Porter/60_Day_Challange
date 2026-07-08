@@ -662,9 +662,8 @@ let DATA_DOC=null;
 let START=new Date(2026,5,11),TARGET=new Date(2026,7,12);
 const KEY="recomp:";
 
-// Fixed daily items (non-nutrition)
+// Fixed daily items (steps are tracked as a live count, not a tick)
 const DAILY=[
-  {id:"steps",t:"8,000–10,000 steps",s:"the quiet fat-loss lever"},
   {id:"sleep",t:"7–9 hours sleep",s:"where the muscle is actually built"},
 ];
 
@@ -715,7 +714,7 @@ const DEFAULT_ABS=[
   {id:"ab_side",name:"Side plank",sets:"3",reps:"30 sec/side",note:"obliques"},
 ];
 
-const DEFAULT_MACRO_GOALS={calories:2300,protein:155,fat:65,carbs:250,waterMl:2500};
+const DEFAULT_MACRO_GOALS={calories:2300,protein:155,fat:65,carbs:250,waterMl:2500,stepsGoal:8000};
 
 // Meal sections for the food tracker
 const MEAL_KEYS=[["breakfast","🍳 Breakfast"],["lunch","🥪 Lunch"],["dinner","🍽 Dinner"],["snack","🍎 Snacks"]];
@@ -794,8 +793,9 @@ function calcDayXP(state){
   const sess=sessById(state.session);
   const allIds=[...DAILY.map(d=>d.id),...(sess?sess.items.map(i=>i.id):[]),...customAbs.map(a=>a.id)];
   const macroHits=macroHitCount(state);
-  let xp=(allIds.filter(id=>ch[id]).length+macroHits)*XP_PER_ITEM;
-  const dailyDone=DAILY.every(d=>ch[d.id]);
+  const stepsDone=(+((state&&state.steps)||0))>=(macroGoals.stepsGoal||8000);
+  let xp=(allIds.filter(id=>ch[id]).length+macroHits+(stepsDone?1:0))*XP_PER_ITEM;
+  const dailyDone=DAILY.every(d=>ch[d.id])&&stepsDone;
   const macroDone=macroHits===4;
   const gymDone=sess&&sess.items.every(i=>ch[i.id]);
   const absDone=customAbs.every(a=>ch[a.id]);
@@ -809,8 +809,8 @@ function showXPToast(g){if(g<=0)return;const t=document.createElement("div");t.c
 function showLevelUpPopup(info){const ov=document.createElement("div");ov.className="celeb-overlay";ov.innerHTML=`<div class="level-up-box"><span class="ce-emoji">⚡</span><h3>Level ${info.level}!</h3><p>${info.name}</p><button id="lvlClose">Keep going →</button></div>`;document.body.appendChild(ov);ov.querySelector("#lvlClose").addEventListener("click",()=>ov.remove());ov.addEventListener("click",e=>{if(e.target===ov)ov.remove();});}
 
 // --- Progress ---
-function barTotal(){const sess=sessById(dayState.session);return DAILY.length+4+(sess?sess.items.length:0);}
-function barDone(){const sess=sessById(dayState.session);let ids=[...DAILY.map(d=>d.id),...(sess?sess.items.map(i=>i.id):[])];return ids.filter(id=>dayState.checked[id]).length+macroHitCount(dayState);}
+function barTotal(){const sess=sessById(dayState.session);return DAILY.length+1+4+(sess?sess.items.length:0);}
+function barDone(){const sess=sessById(dayState.session);let ids=[...DAILY.map(d=>d.id),...(sess?sess.items.map(i=>i.id):[])];const stepsDone=(+dayState.steps||0)>=(macroGoals.stepsGoal||8000);return ids.filter(id=>dayState.checked[id]).length+macroHitCount(dayState)+(stepsDone?1:0);}
 
 // --- Render ---
 function render(){
@@ -846,7 +846,7 @@ function render(){
       <label>👟 Steps today</label>
       <input id="stepsInput" type="number" min="0" step="100" value="${stepsToday||''}" placeholder="e.g. 8500">
       <button class="sync-mini" id="syncStepsNut">⟳ sync</button>
-      <span class="cb-note">≈ ${burned} kcal burned walking</span>
+      <span class="cb-note" style="font-weight:700;color:rgb(var(--accent-raw))">= +${burned} kcal earned</span>
     </div>
   </div>`;
   const macroBarsHtml='<div class="macro-bars">'+[
@@ -956,9 +956,17 @@ function render(){
       </div>
     </div>`,true)}
   </div>`;
+  const stepsGoal=macroGoals.stepsGoal||8000;
+  const stepsDone=stepsToday>=stepsGoal;
+  const stepsRow=`<div class="item ${stepsDone?'done':''}" style="cursor:default">
+    <div class="box"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+    <div class="item-text"><div class="t">Steps · ${stepsToday.toLocaleString()} / ${stepsGoal.toLocaleString()}</div><div class="s">🚶 +${burned} kcal earned${stepsDone?' · goal hit':''}</div></div>
+    <input class="food-serv" id="stepsInputHome" type="number" min="0" step="100" value="${stepsToday||''}" placeholder="steps" style="width:78px">
+    <button class="sync-mini" id="syncStepsDaily">⟳</button>
+  </div>`;
   const dailyCard=`<div class="card">
-    ${cardHd('daily','Every day · non-negotiables',dailyDone+'/'+DAILY.length,true)}
-    ${cardBody('daily',DAILY.map(it=>itemHtml(it)).join(''),true)}
+    ${cardHd('daily','Every day · non-negotiables',(dailyDone+(stepsDone?1:0))+'/'+(DAILY.length+1),true)}
+    ${cardBody('daily',stepsRow+DAILY.map(it=>itemHtml(it)).join(''),true)}
   </div>`;
   const macrosCard=`<div class="card">
     ${cardHd('macros','Calories & macros · today','',true)}
@@ -1046,7 +1054,12 @@ function render(){
     app.innerHTML=`<div class="card" style="margin-top:14px"><div id="settingsBody" style="padding-bottom:20px"></div></div>`;
   }
 
-  app.querySelectorAll(".item").forEach(el=>el.addEventListener("click",()=>toggle(el.dataset.id)));
+  app.querySelectorAll(".item[data-id]").forEach(el=>el.addEventListener("click",()=>toggle(el.dataset.id)));
+  document.getElementById("stepsInputHome")?.addEventListener("change",e=>{
+    const v=Math.max(0,Math.round(+e.target.value||0));
+    dayState.steps=v;persistDay();updateXPAfterFood();render();
+  });
+  document.getElementById("syncStepsDaily")?.addEventListener("click",()=>checkStepsInbox(false));
   app.querySelectorAll(".seg button").forEach(el=>el.addEventListener("click",()=>pickSession(el.dataset.sess)));
   document.getElementById("esbSettingsBtn")?.addEventListener("click",openSettings);
   document.getElementById("resetBtn")?.addEventListener("click",resetDay);
@@ -1072,7 +1085,7 @@ function render(){
   app.querySelector(".water-reset")?.addEventListener("click",()=>{dayState.water=0;persistDay();render();});
   document.getElementById("stepsInput")?.addEventListener("change",e=>{
     const v=Math.max(0,Math.round(+e.target.value||0));
-    dayState.steps=v;persistDay();render();
+    dayState.steps=v;persistDay();updateXPAfterFood();render();
   });
   document.getElementById("syncStepsSum")?.addEventListener("click",()=>checkStepsInbox(false));
   document.getElementById("syncStepsNut")?.addEventListener("click",()=>checkStepsInbox(false));
@@ -1150,7 +1163,7 @@ function renderWeight(){const body=document.getElementById("wBody");if(!body)ret
 function renderQuote(){const el=document.getElementById("quoteCard");if(!el)return;const seed=realToday.getFullYear()*10000+((realToday.getMonth()+1)*100)+realToday.getDate();const q=QUOTES[seed%QUOTES.length];el.innerHTML=`<div class="qc-label">Quote of the day</div><div class="qc-text">"${q}"</div><div class="qc-warning">⚠️ Don't let future-you down. Every day you skip makes the next one harder — stay locked in or live with the regret.</div>`;}
 function pad2(n){return String(Math.floor(n)).padStart(2,'0');}
 function tickTimers(){const now=new Date();const mid=new Date(now);mid.setHours(24,0,0,0);let r=Math.max(0,mid-now);const dh=Math.floor(r/3600000);r-=dh*3600000;const dm=Math.floor(r/60000);r-=dm*60000;const ds=Math.floor(r/1000);const td=document.getElementById("timerDay");if(td)td.textContent=pad2(dh)+':'+pad2(dm)+':'+pad2(ds);let r2=Math.max(0,TARGET-now);const tdays=Math.floor(r2/86400000);r2-=tdays*86400000;const th=Math.floor(r2/3600000);r2-=th*3600000;const tm=Math.floor(r2/60000);r2-=tm*60000;const ts=Math.floor(r2/1000);const tt=document.getElementById("timerTarget");if(tt)tt.textContent=tdays+'d '+pad2(th)+':'+pad2(tm)+':'+pad2(ts);}
-async function renderWeek(){const wk=document.getElementById("week");if(!wk)return;const wkStart=new Date(START);wkStart.setDate(START.getDate()+weekIndexOf(viewDate)*7);const labels=["S","M","T","W","T","F","S"];let html="",absCount=0,fullCount=0;for(let i=0;i<7;i++){const d=new Date(wkStart);d.setDate(wkStart.getDate()+i);const k=dkey(d);let cls="day-cell",mark="";if(k===viewKey)cls+=" is-view";const data=k===viewKey?dayState:await load(k);if(data&&data.checked){const dc=DAILY.filter(x=>data.checked[x.id]).length;if(dc>=DAILY.length){cls+=" full";mark="✓";fullCount++;}else if(dc>0){cls+=" part";mark=dc;}if(customAbs.some(a=>data.checked[a.id]))absCount++;}html+=`<div class="${cls}" data-key="${k}"><div class="dl">${labels[d.getDay()]}</div><div class="dn">${d.getDate()}</div><div class="dot">${mark}</div></div>`;}wk.innerHTML=html;wk.querySelectorAll(".day-cell").forEach(el=>el.addEventListener("click",()=>jumpTo(el.dataset.key)));const sw=document.getElementById("sumWeekDone");if(sw)sw.textContent=fullCount;const hd=document.querySelector('[data-card="week"]');if(hd){const b=hd.querySelector(".hd-badge");if(b)b.textContent="abs "+absCount+"/4";}}
+async function renderWeek(){const wk=document.getElementById("week");if(!wk)return;const wkStart=new Date(START);wkStart.setDate(START.getDate()+weekIndexOf(viewDate)*7);const labels=["S","M","T","W","T","F","S"];let html="",absCount=0,fullCount=0;for(let i=0;i<7;i++){const d=new Date(wkStart);d.setDate(wkStart.getDate()+i);const k=dkey(d);let cls="day-cell",mark="";if(k===viewKey)cls+=" is-view";const data=k===viewKey?dayState:await load(k);if(data&&data.checked){const dc=DAILY.filter(x=>data.checked[x.id]).length;const stepsOk=(+data.steps||0)>=(macroGoals.stepsGoal||8000);if(dc>=DAILY.length&&stepsOk){cls+=" full";mark="✓";fullCount++;}else if(dc>0||stepsOk){cls+=" part";mark=dc+(stepsOk?1:0);}if(customAbs.some(a=>data.checked[a.id]))absCount++;}html+=`<div class="${cls}" data-key="${k}"><div class="dl">${labels[d.getDay()]}</div><div class="dn">${d.getDate()}</div><div class="dot">${mark}</div></div>`;}wk.innerHTML=html;wk.querySelectorAll(".day-cell").forEach(el=>el.addEventListener("click",()=>jumpTo(el.dataset.key)));const sw=document.getElementById("sumWeekDone");if(sw)sw.textContent=fullCount;const hd=document.querySelector('[data-card="week"]');if(hd){const b=hd.querySelector(".hd-badge");if(b)b.textContent="abs "+absCount+"/4";}}
 
 // --- Celebration ---
 function checkCelebrate(){const total=barTotal(),done=barDone();if(total>0&&done===total&&!celebrated[viewKey]){celebrated[viewKey]=true;triggerCelebration(calcDayXP(dayState));}}
@@ -1160,7 +1173,7 @@ function launchConfetti(){const canvas=document.createElement("canvas");canvas.i
 // --- Actions ---
 function toggle(id){const prevXP=(xpData.days[viewKey]||{xp:0}).xp;const prevLvl=getLevelInfo(xpData.total).level;dayState.checked[id]=!dayState.checked[id];persistDay();const diff=updateXP(prevXP);const newLvl=getLevelInfo(xpData.total).level;if(diff.gained>0)showXPToast(diff.gained);if(newLvl>prevLvl)showLevelUpPopup(getLevelInfo(xpData.total));render();}
 function pickSession(k){if(dayState.session!==k){const prevXP=(xpData.days[viewKey]||{xp:0}).xp;const keep={};DAILY.forEach(d=>{if(dayState.checked[d.id])keep[d.id]=true;});customAbs.forEach(a=>{if(dayState.checked[a.id])keep[a.id]=true;});const s=sessById(k);if(s)s.items.forEach(it=>{if(dayState.checked[it.id])keep[it.id]=true;});dayState.checked=keep;dayState.session=k;updateXP(prevXP);}persistDay();render();}
-function resetDay(){const prevXP=(xpData.days[viewKey]||{xp:0}).xp;celebrated[viewKey]=false;dayState={session:dayState.session,checked:{},food:dayState.food,water:0,meals:dayState.meals||{}};persistDay();updateXP(prevXP);render();}
+function resetDay(){const prevXP=(xpData.days[viewKey]||{xp:0}).xp;celebrated[viewKey]=false;dayState={session:dayState.session,checked:{},food:dayState.food,water:0,meals:dayState.meals||{},steps:dayState.steps||0};persistDay();updateXP(prevXP);render();}
 function updateXPAfterFood(){const prevXP=(xpData.days[viewKey]||{xp:0}).xp;const prevLvl=getLevelInfo(xpData.total).level;const diff=updateXP(prevXP);const newLvl=getLevelInfo(xpData.total).level;if(diff.gained>0)showXPToast(diff.gained);if(newLvl>prevLvl)showLevelUpPopup(getLevelInfo(xpData.total));}
 function addFood(meal,food){if(!dayState.meals)dayState.meals={};if(!dayState.meals[meal])dayState.meals[meal]=[];dayState.meals[meal].push(food);persistDay();updateXPAfterFood();render();}
 function persistDay(){save(viewKey,dayState);}
@@ -1286,6 +1299,7 @@ function renderSettings(){
         <div class="macro-field"><label>Fat</label><input type="number" id="mg_fat" value="${macroGoals.fat}"><div class="unit">grams / day</div></div>
         <div class="macro-field"><label>Carbs</label><input type="number" id="mg_carbs" value="${macroGoals.carbs}"><div class="unit">grams / day</div></div>
         <div class="macro-field"><label>Water Goal</label><input type="number" id="mg_water" value="${macroGoals.waterMl}"><div class="unit">ml / day</div></div>
+        <div class="macro-field"><label>Steps Goal</label><input type="number" id="mg_steps" value="${macroGoals.stepsGoal||8000}"><div class="unit">steps / day</div></div>
       </div>
       <button class="s-save-btn" id="saveMacrosBtn">Save Nutrition Goals</button>
     </div>
@@ -1412,6 +1426,7 @@ function renderSettings(){
     macroGoals.fat=+body.querySelector("#mg_fat").value||65;
     macroGoals.carbs=+body.querySelector("#mg_carbs").value||250;
     macroGoals.waterMl=+body.querySelector("#mg_water").value||2500;
+    macroGoals.stepsGoal=+body.querySelector("#mg_steps").value||8000;
     save("macroGoals",macroGoals);render();showSettingsToast("Nutrition goals saved ✓");
   });
 }
@@ -1693,7 +1708,7 @@ async function checkStepsInbox(silent){
     if(!date){if(!silent)showSettingsToast("Sync received but the date was blank — check the Shortcut's date token");return;}
     if(!steps){if(!silent)showSettingsToast("Sync received but steps were 0 — check Health permission for Shortcuts");return;}
     if(date===viewKey){
-      if((+dayState.steps||0)!==steps){dayState.steps=steps;persistDay();render();if(!silent)showSettingsToast("Steps synced ✓ "+steps.toLocaleString());}
+      if((+dayState.steps||0)!==steps){dayState.steps=steps;persistDay();updateXPAfterFood();render();if(!silent)showSettingsToast("Steps synced ✓ "+steps.toLocaleString());}
       else if(!silent)showSettingsToast("Steps already up to date ("+steps.toLocaleString()+")");
     }else{
       const ds=await load(date);
