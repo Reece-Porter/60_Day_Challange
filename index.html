@@ -298,6 +298,12 @@
   #qrReader canvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
   .scan-manual{display:flex;gap:8px;margin-top:12px;}
   .scan-status{font-size:13px;color:var(--muted);margin-top:10px;min-height:18px;}
+  .search-result{display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:8px;}
+  .search-result:hover{background:var(--paper);}
+  .search-result .sr-info{flex:1;min-width:0;}
+  .search-result .sr-nm{font-size:13px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .search-result .sr-sub{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .search-result .sr-kcal{font-size:12px;font-weight:800;color:rgb(var(--accent-raw));white-space:nowrap;}
   .sr-name{font-size:17px;font-weight:800;}
   .sr-brand{font-size:12px;color:var(--muted);margin-bottom:6px;}
   .sr-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:12px 0;}
@@ -546,6 +552,11 @@
           <input class="auth-field" style="margin:0;flex:1" id="scanManualInput" inputmode="numeric" placeholder="…or type the barcode number">
           <button class="scan-btn" id="scanManualBtn">Look up</button>
         </div>
+        <div class="scan-manual">
+          <input class="auth-field" style="margin:0;flex:1" id="scanSearchInput" placeholder="🔍 …or search foods by name">
+          <button class="scan-btn" id="scanSearchBtn">Search</button>
+        </div>
+        <div id="scanSearchResults"></div>
         <div class="scan-status" id="scanStatus"></div>
       </div>
       <div id="scanResult" style="display:none">
@@ -1506,6 +1517,8 @@ function openScanner(meal){
   document.getElementById("scanResult").style.display="none";
   document.getElementById("scanLive").style.display="block";
   document.getElementById("scanManualInput").value="";
+  document.getElementById("scanSearchInput").value="";
+  document.getElementById("scanSearchResults").innerHTML="";
   document.getElementById("srMealRow").style.display=isBuilder?"none":"flex";
   document.getElementById("srSaveRow").style.display=isBuilder?"none":"flex";
   document.getElementById("srAdd").textContent=isBuilder?"Add to meal":"Add food";
@@ -1638,8 +1651,43 @@ document.getElementById("scanClose").addEventListener("click",closeScanner);
 document.getElementById("scanModal").addEventListener("click",e=>{if(e.target===document.getElementById("scanModal"))closeScanner();});
 document.getElementById("scanManualBtn").addEventListener("click",()=>{const c=document.getElementById("scanManualInput").value.trim();if(c){stopCamera();lookupBarcode(c);}});
 document.getElementById("scanManualInput").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("scanManualBtn").click();});
+
+// ── Food name search (Open Food Facts) ──
+let searchResults=[];
+async function searchFoods(){
+  const q=document.getElementById("scanSearchInput").value.trim();
+  if(!q)return;
+  const st=document.getElementById("scanStatus"),box=document.getElementById("scanSearchResults");
+  stopCamera();
+  st.textContent="Searching for \""+q+"\"…";box.innerHTML="";
+  try{
+    const r=await fetch(`https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=12&fields=product_name,brands,nutriments,serving_quantity,code`);
+    const j=await r.json();
+    const prods=(j.products||[]).filter(p=>p.product_name&&p.nutriments&&(p.nutriments["energy-kcal_100g"]!=null||p.nutriments.proteins_100g!=null));
+    if(!prods.length){st.textContent="No foods found for \""+q+"\" — try a simpler name or brand.";return;}
+    searchResults=prods;
+    st.textContent="Tap a result to pick it:";
+    box.innerHTML=prods.map((p,i)=>{
+      const nu=parseNutriments(p);
+      return `<div class="search-result" data-si="${i}">
+        <div class="sr-info"><div class="sr-nm">${esc(p.product_name)}</div><div class="sr-sub">${esc(p.brands||'')}</div></div>
+        <div class="sr-kcal">${Math.round(nu.cals)} kcal/100g</div>
+      </div>`;
+    }).join('');
+    box.querySelectorAll(".search-result").forEach(el=>el.addEventListener("click",()=>{
+      const p=searchResults[+el.dataset.si];if(!p)return;
+      const nu=parseNutriments(p);
+      scanProduct={name:p.product_name||"Unknown food",brand:p.brands||"",barcode:p.code||"",
+        per100:{cals:nu.cals,protein:nu.protein,fat:nu.fat,carbs:nu.carbs},servingG:nu.servingG};
+      box.innerHTML="";
+      showScanResult();
+    }));
+  }catch(e){st.textContent="Search failed — check your connection and try again.";}
+}
+document.getElementById("scanSearchBtn").addEventListener("click",searchFoods);
+document.getElementById("scanSearchInput").addEventListener("keydown",e=>{if(e.key==="Enter")searchFoods();});
 document.getElementById("srServing").addEventListener("input",updateScanMacros);
-document.getElementById("srBack").addEventListener("click",()=>{scanProduct=null;document.getElementById("scanResult").style.display="none";document.getElementById("scanLive").style.display="block";document.getElementById("scanStatus").textContent="Point your camera at a food barcode…";startCamera();});
+document.getElementById("srBack").addEventListener("click",()=>{scanProduct=null;document.getElementById("scanResult").style.display="none";document.getElementById("scanLive").style.display="block";document.getElementById("scanSearchResults").innerHTML="";document.getElementById("scanStatus").textContent="Point your camera at a food barcode…";startCamera();});
 document.getElementById("srAdd").addEventListener("click",()=>{
   if(!scanProduct)return;
   const g=parseFloat(document.getElementById("srServing").value);
