@@ -1857,7 +1857,7 @@ async function checkStepsInbox(silent){
   }catch(e){if(!silent)showSettingsToast("Sync check failed — try again");}
 }
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&stepsToken)checkStepsInbox(true);});
-setInterval(()=>{if(stepsToken)checkStepsInbox(true);},10*60*1000);
+setInterval(()=>{if(stepsToken)checkStepsInbox(true);},5*60*1000);
 
 // ── Challenge setup (first login) ──
 function openChallengeSetup(){
