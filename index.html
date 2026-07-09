@@ -800,7 +800,7 @@ let weights={},photoCache={};
 let startWeight={value:null,date:"",label:""};
 let day1PhotoLabel="Before";
 let weightRange="days"; // chart range: days | weeks | months | years
-let calcInputs={age:null,sex:"male",height:null,activity:1.55,goal:"cut"};
+let calcInputs={age:null,sex:"male",height:null,activity:1.55,goal:"cut",intensity:"moderate"};
 let weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));
 let customSessions=[...DEFAULT_SESSIONS];
 let customAbs=[...DEFAULT_ABS];
@@ -1152,10 +1152,16 @@ function render(){
           <option value="1.9"${calcInputs.activity==1.9?" selected":""}>Very active — physical job + training</option>
         </select>
         <div class="e-label">Goal</div>
-        <select id="cc_goal" class="saved-meal-sel" style="width:100%;margin-bottom:14px;font-size:13px;padding:10px 12px">
-          <option value="cut"${calcInputs.goal==="cut"?" selected":""}>Lose fat (−20% deficit)</option>
-          <option value="recomp"${calcInputs.goal==="recomp"?" selected":""}>Recomp — maintain weight, build muscle</option>
-          <option value="gain"${calcInputs.goal==="gain"?" selected":""}>Build muscle (+10% surplus)</option>
+        <select id="cc_goal" class="saved-meal-sel" style="width:100%;margin-bottom:12px;font-size:13px;padding:10px 12px">
+          <option value="cut"${calcInputs.goal==="cut"?" selected":""}>Lose fat</option>
+          <option value="recomp"${calcInputs.goal==="recomp"?" selected":""}>Recomp — build muscle, lose fat</option>
+          <option value="gain"${calcInputs.goal==="gain"?" selected":""}>Build muscle / gain weight</option>
+        </select>
+        <div class="e-label">Intensity — how hard do you want to go?</div>
+        <select id="cc_int" class="saved-meal-sel" style="width:100%;margin-bottom:14px;font-size:13px;padding:10px 12px">
+          <option value="low"${calcInputs.intensity==="low"?" selected":""}>Low — sustainable, slower results</option>
+          <option value="moderate"${(calcInputs.intensity||"moderate")==="moderate"?" selected":""}>Moderate — solid pace, some discipline</option>
+          <option value="high"${calcInputs.intensity==="high"?" selected":""}>High — maximum results, demands consistency</option>
         </select>
         <button class="s-save-btn" id="ccCalc">Calculate</button>
         <div id="ccResults"></div>
@@ -1286,21 +1292,32 @@ function bmiChartHtml(bmi){
     <div class="bmi-ticks"><span style="left:${pos(18.5)}%">18.5</span><span style="left:${pos(25)}%">25</span><span style="left:${pos(30)}%">30</span></div>
   </div>`;
 }
-// Intensity tiers per goal: calorie adjustment %, expected weekly rate (kg), protein g/kg, adjustments
+// Intensity tiers per goal (index: 0=low, 1=moderate, 2=high)
+// pct = calorie adjustment vs maintenance, rate = expected kg/week, pKg = protein g/kg
 const PLAN_TIERS={
   cut:[
-    {name:"Mild cut",pct:-10,rate:-0.25,pKg:1.8,notes:["Protein 1.8g/kg","Steps ≥8k/day","Easiest to stick to — little hunger"]},
-    {name:"Moderate cut",pct:-20,rate:-0.5,pKg:2.0,notes:["Protein ↑ 2.0g/kg","Steps ↑ 10k/day","Lift 3–5×/week to hold muscle"]},
-    {name:"Aggressive cut",pct:-28,rate:-0.8,pKg:2.2,notes:["Protein ↑ 2.2g/kg","Add 2 cardio sessions/week","Max 4–8 weeks","Expect hunger & lower energy"]},
+    {name:"Mild cut",intensity:"Low",pct:-10,rate:-0.25,pKg:2.0,notes:["Protein 2.0g/kg","Steps ≥8k/day","Sustainable — little hunger"]},
+    {name:"Moderate cut",intensity:"Moderate",pct:-20,rate:-0.5,pKg:2.2,notes:["Protein ↑ 2.2g/kg","Steps ↑ 10k/day","Lift 3–5×/week to hold muscle"]},
+    {name:"Aggressive cut",intensity:"High",pct:-28,rate:-0.8,pKg:2.4,notes:["Protein ↑ 2.4g/kg — protects muscle in the deficit","Add 2 cardio sessions/week","Max 4–8 weeks","Expect hunger & lower energy"]},
   ],
   recomp:[
-    {name:"Recomp",pct:0,rate:0,pKg:2.0,notes:["Eat at maintenance","Protein 2.0g/kg — non-negotiable","Progressive overload every week","Sleep 7–9h","Patience: changes show in the mirror, not the scale"]},
+    {name:"Steady recomp",intensity:"Low",pct:0,rate:0,pKg:2.0,
+      tl:"Scale holds steady — expect ≈ <b>+1–2 kg muscle</b> and <b>−1–2 kg fat</b> over 12 weeks.",
+      notes:["Eat at maintenance","Protein 2.0g/kg","Progressive overload every week","Sleep 7–9h"]},
+    {name:"Focused recomp",intensity:"Moderate",pct:0,rate:0,pKg:2.2,
+      tl:"Scale holds steady — expect ≈ <b>+2 kg muscle</b> and <b>−2 kg fat</b> over 12 weeks with consistent training.",
+      notes:["Eat at maintenance","Protein ↑ 2.2g/kg","Add sets or weight every week","Steps 8–10k/day","Sleep 7–9h"]},
+    {name:"Intense recomp",intensity:"High",pct:5,rate:0,pKg:2.4,
+      tl:"Muscle-biased: expect ≈ <b>+2–3 kg muscle</b> with fat roughly steady over 12 weeks — the scale may creep up ~1 kg and that's the plan working.",
+      notes:["Slight surplus +5% — fuel the building","Protein ↑ 2.4g/kg","Train 4–6×/week, push overload hard","Carbs around workouts","Recovery is the limiter — sleep like it's your job"]},
   ],
   gain:[
-    {name:"Lean bulk",pct:8,rate:0.25,pKg:1.8,notes:["Protein 1.8g/kg","Carbs ↑ around training","Minimal fat gain"]},
-    {name:"Standard bulk",pct:15,rate:0.45,pKg:1.6,notes:["Protein 1.6–1.8g/kg","Carbs ↑↑ — fuel the lifts","Add a weekly set count increase","Some fat gain is normal"]},
+    {name:"Lean bulk",intensity:"Low",pct:8,rate:0.25,pKg:2.0,notes:["Protein 2.0g/kg","Carbs ↑ around training","Minimal fat gain"]},
+    {name:"Standard bulk",intensity:"Moderate",pct:12,rate:0.4,pKg:2.2,notes:["Protein ↑ 2.2g/kg","Carbs ↑↑ — fuel the lifts","Add a weekly set count increase"]},
+    {name:"Aggressive bulk",intensity:"High",pct:18,rate:0.6,pKg:2.4,notes:["Protein ↑ 2.4g/kg","Carbs ↑↑↑ — big meals, big lifts","Push compound lifts hard, add sets weekly","Fat gain comes with it — plan a mini-cut after"]},
   ],
 };
+const INTENSITY_INDEX={low:0,moderate:1,high:2};
 let planGoal="cut";
 function calcTdee(w){
   if(!calcInputs.age||!calcInputs.height)return null;
@@ -1314,8 +1331,9 @@ function runCalculator(auto){
   const w=+document.getElementById("cc_w").value||null;
   const act=+document.getElementById("cc_act").value||1.55;
   const goal=document.getElementById("cc_goal").value;
+  const intensity=document.getElementById("cc_int").value||"moderate";
   if(!h||!w){if(!auto)alert("Enter at least your height and weight.");return;}
-  if(!auto){calcInputs={age,sex,height:h,activity:act,goal};save("calcInputs",calcInputs);}
+  if(!auto){calcInputs={age,sex,height:h,activity:act,goal,intensity};planGoal=goal;save("calcInputs",calcInputs);}
   const bmi=w/((h/100)*(h/100));
   const cat=bmi<18.5?["Underweight","#0EA5E9"]:bmi<25?["Healthy range","#059669"]:bmi<30?["Overweight","#F59E0B"]:["Obese","#e05252"];
   let html=`<div class="sr-grid" style="grid-template-columns:1fr 1fr;margin-top:14px">
@@ -1324,22 +1342,23 @@ function runCalculator(auto){
   </div>
   ${bmiChartHtml(bmi)}`;
   if(age){
-    // Mifflin-St Jeor BMR, scaled by activity, adjusted for goal
+    // Mifflin-St Jeor BMR, scaled by activity, adjusted by the goal+intensity tier
     const bmr=10*w+6.25*h-5*age+(sex==="male"?5:-161);
     const tdee=bmr*act;
-    const adj=goal==="cut"?0.8:goal==="gain"?1.1:1;
-    const kcal=Math.round(tdee*adj/10)*10;
-    const protein=Math.round((goal==="cut"?2.0:1.8)*w);
+    const tier=PLAN_TIERS[goal][INTENSITY_INDEX[intensity]||1];
+    const kcal=Math.round(tdee*(1+tier.pct/100)/10)*10;
+    const protein=Math.round(tier.pKg*w);
     const fat=Math.round(0.9*w);
     const carbs=Math.max(0,Math.round((kcal-protein*4-fat*9)/4));
-    html+=`<div class="e-label" style="margin-top:12px">Recommended daily intake</div>
+    html+=`<div class="e-label" style="margin-top:12px">Your plan · ${tier.name}</div>
     <div class="sr-grid">
       <div class="sr-cell"><div class="l">kcal</div><div class="v">${kcal.toLocaleString()}</div></div>
       <div class="sr-cell"><div class="l">Protein</div><div class="v">${protein}g</div></div>
       <div class="sr-cell"><div class="l">Fat</div><div class="v">${fat}g</div></div>
       <div class="sr-cell"><div class="l">Carbs</div><div class="v">${carbs}g</div></div>
     </div>
-    <p style="font-size:11.5px;color:var(--muted);margin:8px 0 12px;line-height:1.5">Maintenance ≈ ${Math.round(tdee).toLocaleString()} kcal/day (Mifflin-St Jeor). Protein ${goal==="cut"?"2.0":"1.8"}g/kg · fat 0.9g/kg · rest carbs. Estimates — adjust based on how your weight actually trends.</p>
+    <div class="food-chips" style="margin:8px 0">${tier.notes.map(n=>`<span class="fm-chip">${n}</span>`).join('')}</div>
+    <p style="font-size:11.5px;color:var(--muted);margin:8px 0 12px;line-height:1.5">Maintenance ≈ ${Math.round(tdee).toLocaleString()} kcal/day (Mifflin-St Jeor). Protein ${tier.pKg}g/kg · fat 0.9g/kg · rest carbs. See the Plans card for the full timeline.</p>
     <button class="s-save-btn" id="ccApply">Apply to my nutrition goals</button>`;
   }else{
     html+=`<p style="font-size:12px;color:var(--muted);margin-top:10px">Add your age to get calorie & macro recommendations.</p>`;
@@ -1347,13 +1366,15 @@ function runCalculator(auto){
   const res=document.getElementById("ccResults");
   res.innerHTML=html;
   res.querySelector("#ccApply")?.addEventListener("click",()=>{
-    const kcal=Math.round((10*w+6.25*h-5*age+(sex==="male"?5:-161))*act*(goal==="cut"?0.8:goal==="gain"?1.1:1)/10)*10;
+    const bmr=10*w+6.25*h-5*age+(sex==="male"?5:-161);
+    const tier=PLAN_TIERS[goal][INTENSITY_INDEX[intensity]||1];
+    const kcal=Math.round(bmr*act*(1+tier.pct/100)/10)*10;
     macroGoals.calories=kcal;
-    macroGoals.protein=Math.round((goal==="cut"?2.0:1.8)*w);
+    macroGoals.protein=Math.round(tier.pKg*w);
     macroGoals.fat=Math.round(0.9*w);
     macroGoals.carbs=Math.max(0,Math.round((kcal-macroGoals.protein*4-macroGoals.fat*9)/4));
     save("macroGoals",macroGoals);
-    showSettingsToast("Nutrition goals updated ✓");
+    showSettingsToast(`${tier.name} applied ✓ ${kcal.toLocaleString()} kcal · P${macroGoals.protein}g`);
   });
 }
 
@@ -2098,7 +2119,7 @@ document.getElementById("authSubmit").addEventListener("click",async()=>{
 });
 document.getElementById("authPassword").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("authSubmit").click();});
 document.getElementById("authGoogle").addEventListener("click",async()=>{authErr("");try{await signInWithPopup(auth,gProvider);}catch(e){authErr(e.code==='auth/popup-closed-by-user'?'Sign-in cancelled.':e.message);}});
-document.getElementById("signOutBtn").addEventListener("click",async()=>{await signOut(auth);_cache=null;DATA_DOC=null;dayState={session:null,checked:{},food:"",water:0,meals:{}};savedMeals=[];recentFoods=[];builderItems=[];builderName="";stepsToken=null;weightRange="days";planGoal="cut";calcInputs={age:null,sex:"male",height:null,activity:1.55,goal:"cut"};START=new Date(2026,5,11);TARGET=new Date(2026,7,12);applyChallengeDates();weights={};photoCache={};startWeight={value:null,date:"",label:""};day1PhotoLabel="Before";weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];macroGoals={...DEFAULT_MACRO_GOALS};xpData={total:0,days:{}};celebrated={};applyColorTheme("default");document.getElementById("mainApp").style.display="none";document.getElementById("authScreen").style.display="flex";document.getElementById("authEmail").value="";document.getElementById("authPassword").value="";});
+document.getElementById("signOutBtn").addEventListener("click",async()=>{await signOut(auth);_cache=null;DATA_DOC=null;dayState={session:null,checked:{},food:"",water:0,meals:{}};savedMeals=[];recentFoods=[];builderItems=[];builderName="";stepsToken=null;weightRange="days";planGoal="cut";calcInputs={age:null,sex:"male",height:null,activity:1.55,goal:"cut",intensity:"moderate"};START=new Date(2026,5,11);TARGET=new Date(2026,7,12);applyChallengeDates();weights={};photoCache={};startWeight={value:null,date:"",label:""};day1PhotoLabel="Before";weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];macroGoals={...DEFAULT_MACRO_GOALS};xpData={total:0,days:{}};celebrated={};applyColorTheme("default");document.getElementById("mainApp").style.display="none";document.getElementById("authScreen").style.display="flex";document.getElementById("authEmail").value="";document.getElementById("authPassword").value="";});
 
 // ── Auth State ──
 async function migrateOldData(){try{const userSnap=await getDoc(DATA_DOC);if(userSnap.exists()&&Object.keys(userSnap.data()).length>0)return false;const oldSnap=await getDoc(doc(fsdb,'recomp','main'));if(!oldSnap.exists())return false;const oldData=oldSnap.data();await setDoc(DATA_DOC,oldData);_cache={...oldData};return true;}catch(e){return false;}}
@@ -2129,7 +2150,8 @@ onAuthStateChanged(auth,async user=>{
   const mg=await load("macroGoals");if(mg)macroGoals={...DEFAULT_MACRO_GOALS,...mg};
   const sm=await load("savedMeals");savedMeals=sm||[];
   const rf=await load("recentFoods");recentFoods=rf||[];
-  const ci=await load("calcInputs");if(ci)calcInputs=ci;
+  const ci=await load("calcInputs");if(ci)calcInputs={intensity:"moderate",...ci};
+  if(calcInputs.goal&&PLAN_TIERS[calcInputs.goal])planGoal=calcInputs.goal;
   const xp=await load("xpData");if(xp)xpData=xp;
   await loadDay();
   await ensureStepsToken();
