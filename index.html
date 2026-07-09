@@ -241,6 +241,34 @@
     border:1px solid var(--line);border-radius:8px;padding:10px;word-break:break-all;margin-bottom:8px;user-select:all;color:var(--ink);}
   .sync-steps{font-size:13px;color:var(--muted);line-height:1.75;padding-left:18px;margin:6px 0 14px;}
   .sync-steps b{color:var(--ink);}
+  /* Progress calendar */
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+  .cal-dowh{text-align:center;font-size:10px;font-weight:700;color:var(--muted);text-transform:uppercase;padding-bottom:2px;}
+  .cal-cell{position:relative;aspect-ratio:1;border-radius:9px;background:var(--paper);border:1px solid var(--line);
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;min-width:0;}
+  .cal-cell.out{visibility:hidden;}
+  .cal-cell.future{opacity:.45;cursor:default;}
+  .cal-cell.today{border-color:rgb(var(--accent-raw));box-shadow:0 0 0 1.5px rgba(var(--accent-raw),.4);}
+  .cal-num{font-size:11px;font-weight:600;color:var(--muted);line-height:1;}
+  .cal-cell.today .cal-num{color:rgb(var(--accent-raw));font-weight:800;}
+  .cal-dot{width:9px;height:9px;border-radius:50%;background:transparent;border:1.5px solid var(--line);transition:background .2s;}
+  .cal-dot.on{background:rgb(var(--accent-raw));border-color:rgb(var(--accent-raw));box-shadow:0 0 6px rgba(var(--accent-raw),.5);}
+  .cal-month{position:absolute;top:2px;left:4px;font-size:8px;font-weight:800;color:rgb(var(--accent-raw));text-transform:uppercase;}
+  .cal-legend{display:flex;gap:14px;margin-top:10px;font-size:11px;color:var(--muted);align-items:center;}
+  .cal-legend .cal-dot{display:inline-block;vertical-align:middle;margin-right:4px;}
+  /* Meal targets */
+  .meal-target{font-size:11px;color:var(--muted);font-weight:600;margin:2px 0 4px;}
+  .meal-target b{color:rgb(var(--accent-raw));}
+  /* Progress timeline */
+  .tl-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px dashed var(--line);}
+  .tl-row:first-of-type{border-top:none;}
+  .tl-wk{flex:0 0 52px;font-size:12px;font-weight:800;}
+  .tl-date{flex:0 0 64px;font-size:11px;color:var(--muted);}
+  .tl-val{flex:1;font-size:13px;font-weight:700;text-align:right;}
+  .tl-delta{flex:0 0 66px;font-size:12px;font-weight:700;text-align:right;}
+  .tl-delta.neg{color:rgb(var(--accent-raw));}
+  .tl-delta.pos{color:#0EA5E9;}
+  .tl-row.deadline{background:rgba(var(--accent-raw),.07);border-radius:8px;padding:8px 8px;}
   /* BMI chart */
   .bmi-chart{margin:14px 0 6px;}
   .bmi-band{position:relative;height:14px;border-radius:99px;overflow:visible;}
@@ -691,6 +719,7 @@
   <button data-tab="nutrition"><span class="tb-ico">🍎</span>Nutrition</button>
   <button data-tab="gym"><span class="tb-ico">🏋️</span>Gym</button>
   <button data-tab="weight"><span class="tb-ico">⚖️</span>Weight</button>
+  <button data-tab="progress"><span class="tb-ico">📈</span>Progress</button>
   <button data-tab="settings"><span class="tb-ico">⚙️</span>Settings</button>
 </nav>
 <input type="file" accept="image/*" id="photoInput1" style="display:none">
@@ -770,8 +799,9 @@ const DEFAULT_ABS=[
 
 const DEFAULT_MACRO_GOALS={calories:2300,protein:155,fat:65,carbs:250,waterMl:2500,stepsGoal:8000};
 
-// Meal sections for the food tracker
+// Meal sections for the food tracker, with share of the daily macro goals
 const MEAL_KEYS=[["breakfast","🍳 Breakfast"],["lunch","🥪 Lunch"],["dinner","🍽 Dinner"],["snack","🍎 Snacks"]];
+const MEAL_SPLIT={breakfast:0.25,lunch:0.30,dinner:0.35,snack:0.10};
 
 const DEFAULT_PLAN={0:{session:"rest",abs:false},1:{session:"chestback",abs:true},2:{session:"shoulderarms",abs:false},3:{session:"rest",abs:true},4:{session:"upperA",abs:false},5:{session:"upperB",abs:true},6:{session:"rest",abs:false}};
 
@@ -948,8 +978,11 @@ function render(){
       </div>`;
     }).join('');
     const sub=list.length?`<div class="meal-sub"><span class="fm-chip cal">🔥 ${Math.round(sec.cals)} kcal</span><span class="fm-chip">P ${sec.p.toFixed(0)}g</span><span class="fm-chip">F ${sec.f.toFixed(0)}g</span><span class="fm-chip">C ${sec.c.toFixed(0)}g</span></div>`:'';
+    const f=MEAL_SPLIT[key]||0.25;
+    const tgt=`<div class="meal-target">Target ≈ <b>${Math.round(macroGoals.calories*f)} kcal</b> · P ${Math.round(macroGoals.protein*f)}g · F ${Math.round(macroGoals.fat*f)}g · C ${Math.round(macroGoals.carbs*f)}g</div>`;
     return `<div class="meal-sec">
-      <div class="meal-hdr"><span class="meal-name">${label}</span><span class="meal-cals">${list.length?Math.round(sec.cals)+' kcal':'nothing logged yet'}</span></div>
+      <div class="meal-hdr"><span class="meal-name">${label}</span><span class="meal-cals">${list.length?Math.round(sec.cals)+' / '+Math.round(macroGoals.calories*f)+' kcal':'nothing logged yet'}</span></div>
+      ${tgt}
       ${rows||'<div class="meal-empty">Nothing eaten yet — scan a barcode or pick a previous food.</div>'}
       ${sub}
       <div class="meal-actions">
@@ -1199,7 +1232,7 @@ function render(){
       ${cardBody('plans',plansBody,true)}
     </div>`;
     app.innerHTML=`<div class="page-grid">
-      <div class="pg-col">${photosCard}${calcCard}</div>
+      <div class="pg-col">${calcCard}</div>
       <div class="pg-col">${weightCard}${plansCard}</div>
     </div>`;
     // auto-show BMI chart when inputs are already known
@@ -1216,6 +1249,73 @@ function render(){
       save("macroGoals",macroGoals);
       showSettingsToast(`${p.name} applied ✓ ${kcal.toLocaleString()} kcal · P${macroGoals.protein} F${macroGoals.fat} C${macroGoals.carbs}`);
     }));
+  }else if(activeTab==="progress"){
+    // ── 2-month completion calendar: 65% behind today, 35% ahead ──
+    const TOTAL=60,BACK=Math.round(TOTAL*0.65),FWD=TOTAL-BACK;
+    const winStart=new Date(realToday);winStart.setDate(winStart.getDate()-BACK);
+    const winEnd=new Date(realToday);winEnd.setDate(winEnd.getDate()+FWD);
+    const gridStart=new Date(winStart);gridStart.setDate(winStart.getDate()-winStart.getDay());
+    const stepsGoalC=macroGoals.stepsGoal||8000;
+    let calCells='<div class="cal-dowh">S</div><div class="cal-dowh">M</div><div class="cal-dowh">T</div><div class="cal-dowh">W</div><div class="cal-dowh">T</div><div class="cal-dowh">F</div><div class="cal-dowh">S</div>';
+    let doneCount=0,pastCount=0;
+    for(let d=new Date(gridStart);d<=winEnd;d.setDate(d.getDate()+1)){
+      const k=dkey(new Date(d.getFullYear(),d.getMonth(),d.getDate(),12));
+      const inWin=midnight(d)>=midnight(winStart)&&midnight(d)<=midnight(winEnd);
+      const isFuture=midnight(d)>midnight(realToday);
+      const data=k===viewKey?dayState:(_cache?_cache[k]:null);
+      let dayDone=false;
+      if(data&&data.checked){
+        const dc=DAILY.every(x=>data.checked[x.id]);
+        const st=(+data.steps||0)>=stepsGoalC;
+        dayDone=dc&&st;
+      }
+      if(inWin&&!isFuture){pastCount++;if(dayDone)doneCount++;}
+      calCells+=`<div class="cal-cell${inWin?'':' out'}${isFuture?' future':''}${k===realKey?' today':''}" data-k="${inWin&&!isFuture?k:''}">
+        ${d.getDate()===1?`<span class="cal-month">${d.toLocaleDateString(undefined,{month:'short'})}</span>`:''}
+        <span class="cal-num">${d.getDate()}</span><span class="cal-dot${dayDone?' on':''}"></span>
+      </div>`;
+    }
+    const calendarCard=`<div class="card">
+      <div class="card-hd open" style="cursor:default">📅 Completion calendar<span class="hd-badge">${doneCount}/${pastCount} days</span></div>
+      <div class="card-body">
+        <div class="cal-grid">${calCells}</div>
+        <div class="cal-legend"><span><span class="cal-dot on"></span>day fully completed</span><span><span class="cal-dot"></span>not yet</span></div>
+      </div>
+    </div>`;
+    // ── Weekly projection timeline from the selected plan ──
+    const tdeeP=calcTdee(latestW||0);
+    let tlBody='';
+    if(tdeeP&&latestW&&calcInputs.goal){
+      const tier=PLAN_TIERS[calcInputs.goal][INTENSITY_INDEX[calcInputs.intensity]||1];
+      const kcalP=Math.round(tdeeP*(1+tier.pct/100)/10)*10;
+      tlBody+=`<div class="meal-target" style="margin-bottom:10px">Plan: <b>${tier.name}</b> · ${kcalP.toLocaleString()} kcal/day · protein ${Math.round(tier.pKg*latestW)}g</div>`;
+      if(tier.rate===0){
+        tlBody+=`<p style="font-size:13px;line-height:1.6;margin-bottom:10px">${tier.tl}</p>`;
+        const marks=[[2,"Strength climbing, gym habit locked in"],[4,"First visual changes — arms & shoulders fill out"],[6,"Clothes fit differently; lifts noticeably up"],[8,"Visible muscle gain; waist same or smaller"],[10,"Others start noticing"],[12,"≈ +2–3 kg muscle · fat steady or down — take the after photo"]];
+        tlBody+=marks.map(([wk,txt])=>{const dd=new Date(realToday);dd.setDate(dd.getDate()+wk*7);
+          return `<div class="tl-row"><span class="tl-wk">Wk ${wk}</span><span class="tl-date">${shortD(dd)}</span><span class="tl-val" style="text-align:left;font-weight:600;font-size:12px">${txt}</span></div>`;}).join('');
+      }else{
+        for(let wk=1;wk<=12;wk++){
+          const dd=new Date(realToday);dd.setDate(dd.getDate()+wk*7);
+          const wv=latestW+tier.rate*wk;
+          const delta=tier.rate*wk;
+          const isDeadline=Math.abs((midnight(dd)-midnight(TARGET))/86400000)<7&&midnight(dd)<=midnight(TARGET);
+          tlBody+=`<div class="tl-row${isDeadline?' deadline':''}"><span class="tl-wk">Wk ${wk}</span><span class="tl-date">${shortD(dd)}</span><span class="tl-val">${wv.toFixed(1)} kg</span><span class="tl-delta ${delta<0?'neg':'pos'}">${delta>0?'+':''}${delta.toFixed(1)} kg</span></div>`;
+        }
+        tlBody+=`<p style="font-size:11.5px;color:var(--muted);margin-top:10px;line-height:1.5">Projection assumes you hit the plan's calories & protein consistently. Real progress wobbles week to week — judge by the 2-week trend on your weight chart.</p>`;
+      }
+    }else{
+      tlBody='<p style="font-size:13px;color:var(--muted)">Set your goal & intensity in the Weight tab calculator first — your weekly projection will appear here.</p>';
+    }
+    const timelineCard=`<div class="card">
+      <div class="card-hd open" style="cursor:default">🗓 Your projected timeline</div>
+      <div class="card-body">${tlBody}</div>
+    </div>`;
+    app.innerHTML=`<div class="page-grid">
+      <div class="pg-col">${photosCard}${timelineCard}</div>
+      <div class="pg-col">${calendarCard}</div>
+    </div>`;
+    app.querySelectorAll(".cal-cell[data-k]").forEach(c=>{if(c.dataset.k)c.addEventListener("click",()=>jumpTo(c.dataset.k));});
   }else if(activeTab==="settings"){
     app.innerHTML=`<div class="card" style="margin-top:14px"><div id="settingsBody" style="padding-bottom:20px"></div></div>`;
   }
