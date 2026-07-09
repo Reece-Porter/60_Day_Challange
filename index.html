@@ -298,6 +298,12 @@
   #qrReader canvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;}
   .scan-manual{display:flex;gap:8px;margin-top:12px;}
   .scan-status{font-size:13px;color:var(--muted);margin-top:10px;min-height:18px;}
+  .opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .opt-btn{font-family:inherit;font-size:13px;font-weight:700;color:var(--ink);background:var(--paper);
+    border:1.5px solid var(--line);border-radius:14px;padding:18px 10px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:8px;transition:border-color .15s,background .15s;}
+  .opt-btn:hover{border-color:rgb(var(--accent-raw));background:rgba(var(--accent-raw),.06);}
+  .opt-btn .ob-ico{font-size:26px;line-height:1;}
   .search-result{display:flex;align-items:center;gap:10px;padding:10px 8px;border-bottom:1px solid var(--line);cursor:pointer;border-radius:8px;}
   .search-result:hover{background:var(--paper);}
   .search-result .sr-info{flex:1;min-width:0;}
@@ -547,17 +553,33 @@
     </div>
     <div class="s-section" style="padding-bottom:24px">
       <div id="scanLive">
-        <div id="qrReader"></div>
-        <div class="scan-manual">
-          <input class="auth-field" style="margin:0;flex:1" id="scanManualInput" inputmode="numeric" placeholder="…or type the barcode number">
-          <button class="scan-btn" id="scanManualBtn">Look up</button>
+        <div id="scanChooser" class="opt-grid">
+          <button class="opt-btn" id="optScan"><span class="ob-ico">📷</span>Scan barcode</button>
+          <button class="opt-btn" id="optType"><span class="ob-ico">⌨️</span>Type barcode</button>
+          <button class="opt-btn" id="optSearch"><span class="ob-ico">🔍</span>Search foods</button>
+          <button class="opt-btn" id="optSaved"><span class="ob-ico">🍱</span>Saved &amp; recent</button>
         </div>
-        <div class="scan-manual">
-          <input class="auth-field" style="margin:0;flex:1" id="scanSearchInput" placeholder="🔍 …or search foods by name">
-          <button class="scan-btn" id="scanSearchBtn">Search</button>
+        <div id="scanPanelScan" class="scan-panel" style="display:none">
+          <div id="qrReader"></div>
         </div>
-        <div id="scanSearchResults"></div>
+        <div id="scanPanelType" class="scan-panel" style="display:none">
+          <div class="scan-manual">
+            <input class="auth-field" style="margin:0;flex:1" id="scanManualInput" inputmode="numeric" placeholder="Barcode number">
+            <button class="scan-btn" id="scanManualBtn">Look up</button>
+          </div>
+        </div>
+        <div id="scanPanelSearch" class="scan-panel" style="display:none">
+          <div class="scan-manual">
+            <input class="auth-field" style="margin:0;flex:1" id="scanSearchInput" placeholder="e.g. tesco chicken breast">
+            <button class="scan-btn" id="scanSearchBtn">Search</button>
+          </div>
+          <div id="scanSearchResults"></div>
+        </div>
+        <div id="scanPanelSaved" class="scan-panel" style="display:none">
+          <div id="savedPanelList"></div>
+        </div>
         <div class="scan-status" id="scanStatus"></div>
+        <button class="scan-btn" id="scanBackBtn" style="width:100%;margin-top:10px;display:none">← Back to options</button>
       </div>
       <div id="scanResult" style="display:none">
         <div class="sr-name" id="srName"></div>
@@ -572,7 +594,7 @@
         <div class="sr-serv-row" id="srMealRow"><label style="font-size:13px;font-weight:700">Add to</label><select class="saved-meal-sel" id="srMeal"><option value="breakfast">🍳 Breakfast</option><option value="lunch">🥪 Lunch</option><option value="dinner">🍽 Dinner</option><option value="snack">🍎 Snacks</option></select></div>
         <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin:10px 0 14px;cursor:pointer" id="srSaveRow"><input type="checkbox" id="srSaveChk"> Save to my meals for next time</label>
         <button class="s-save-btn" id="srAdd">Add food</button>
-        <button class="scan-btn" id="srBack" style="width:100%;margin-top:8px">← Scan something else</button>
+        <button class="scan-btn" id="srBack" style="width:100%;margin-top:8px">← Add something else</button>
       </div>
     </div>
   </div>
@@ -888,8 +910,6 @@ function render(){
   ].map(([l,v,g,u])=>{const pct=g?Math.round(v/g*100):0;
     return `<div class="mb-row"><div class="mb-top"><span>${l}${pct>=100?' ✓':''}</span><span class="mb-val">${Math.round(v)} / ${g} ${u} · ${pct}%</span></div><div class="mb-track"><div class="mb-fill${pct>115?' over':''}" style="width:${Math.min(100,pct)}%"></div></div></div>`;
   }).join('')+'</div>';
-  const savedOpts=savedMeals.map((s,i)=>`<option value="${i}">${esc(s.name)}${s.brand?' — '+esc(s.brand):''}</option>`).join('');
-  const recentOpts=recentFoods.map((f,i)=>`<option value="${i}">${esc(f.name)}${f.brand?' — '+esc(f.brand):''}</option>`).join('');
   const mealsHtml=MEAL_KEYS.map(([key,label])=>{
     const list=(dayState.meals&&dayState.meals[key])||[];
     const sec=list.reduce((a,f)=>{const m=foodMacros(f);a.cals+=m.cals;a.p+=m.protein;a.f+=m.fat;a.c+=m.carbs;return a;},{cals:0,p:0,f:0,c:0});
@@ -910,9 +930,7 @@ function render(){
       ${rows||'<div class="meal-empty">Nothing eaten yet — scan a barcode or pick a previous food.</div>'}
       ${sub}
       <div class="meal-actions">
-        <button class="scan-btn big" data-meal="${key}">📷 Scan barcode</button>
-        ${recentFoods.length?`<select class="recent-food-sel" data-meal="${key}"><option value="">🕐 Recent…</option>${recentOpts}</select>`:''}
-        ${savedMeals.length?`<select class="saved-meal-sel" data-meal="${key}"><option value="">🍱 Saved…</option>${savedOpts}</select>`:''}
+        <button class="scan-btn big" data-meal="${key}">＋ Add food</button>
       </div>
     </div>`;
   }).join('');
@@ -1138,14 +1156,6 @@ function render(){
   const wi=document.getElementById("wInput");if(wi&&weights[viewKey]!=null)wi.value=weights[viewKey];
   // Food tracker
   app.querySelectorAll(".scan-btn[data-meal]").forEach(b=>b.addEventListener("click",()=>openScanner(b.dataset.meal)));
-  app.querySelectorAll(".saved-meal-sel[data-meal]").forEach(sel=>sel.addEventListener("change",()=>{
-    if(sel.value==="")return;const s=savedMeals[+sel.value];if(!s)return;
-    addFood(sel.dataset.meal,{id:uid(),name:s.name,brand:s.brand||'',barcode:s.barcode||'',per100:s.per100,servingG:s.servingG||100});
-  }));
-  app.querySelectorAll(".recent-food-sel[data-meal]").forEach(sel=>sel.addEventListener("change",()=>{
-    if(sel.value==="")return;const f=recentFoods[+sel.value];if(!f)return;
-    addFood(sel.dataset.meal,{id:uid(),name:f.name,brand:f.brand||'',barcode:f.barcode||'',per100:f.per100,servingG:f.servingG||100});
-  }));
   document.getElementById("createMealBtn")?.addEventListener("click",openBuilder);
   app.querySelectorAll(".food-serv[data-meal]").forEach(inp=>inp.addEventListener("change",()=>{
     const f=(dayState.meals[inp.dataset.meal]||[])[+inp.dataset.fi];if(!f)return;
@@ -1510,6 +1520,14 @@ function showSettingsToast(msg){const t=document.createElement("div");t.classNam
 // ══════════════════════════════════════════
 let scanMeal=null,scanProduct=null;
 let scanStream=null,scanTimer=null,quaggaOn=false,lastCode="",lastCodeHits=0;
+const SCAN_PANELS=["scanPanelScan","scanPanelType","scanPanelSearch","scanPanelSaved"];
+function showScanPanel(id){
+  stopCamera();
+  document.getElementById("scanChooser").style.display=id?"none":"grid";
+  SCAN_PANELS.forEach(p=>document.getElementById(p).style.display=p===id?"block":"none");
+  document.getElementById("scanBackBtn").style.display=id?"block":"none";
+  document.getElementById("scanStatus").textContent="";
+}
 function openScanner(meal){
   scanMeal=meal;scanProduct=null;
   const isBuilder=meal==="__builder__";
@@ -1524,9 +1542,33 @@ function openScanner(meal){
   document.getElementById("srAdd").textContent=isBuilder?"Add to meal":"Add food";
   if(!isBuilder)document.getElementById("srMeal").value=meal;
   document.getElementById("srSaveChk").checked=false;
-  document.getElementById("scanStatus").textContent="Point your camera at a food barcode…";
-  startCamera();
+  showScanPanel(null); // start on the chooser
 }
+function renderSavedPanel(){
+  const box=document.getElementById("savedPanelList");
+  const mk=(f,src,i)=>{const kcal=Math.round((f.per100&&f.per100.cals||0)*(f.servingG||100)/100);
+    return `<div class="search-result" data-src="${src}" data-i="${i}">
+      <div class="sr-info"><div class="sr-nm">${esc(f.name)}</div><div class="sr-sub">${esc(f.brand||'')}${f.servingG?` · ${f.servingG}g`:''}</div></div>
+      <div class="sr-kcal">${kcal} kcal</div>
+    </div>`;};
+  let html="";
+  if(savedMeals.length)html+=`<div class="e-label">Saved meals</div>`+savedMeals.map((s,i)=>mk(s,"s",i)).join('');
+  if(recentFoods.length)html+=`<div class="e-label" style="margin-top:10px">Recently scanned</div>`+recentFoods.map((f,i)=>mk(f,"r",i)).join('');
+  if(!html)html='<p style="font-size:13px;color:var(--muted);padding:8px 0">Nothing saved yet — scan or search a food first.</p>';
+  box.innerHTML=html;
+  box.querySelectorAll(".search-result").forEach(el=>el.addEventListener("click",()=>{
+    const src=el.dataset.src==="s"?savedMeals[+el.dataset.i]:recentFoods[+el.dataset.i];
+    if(!src)return;
+    const food={id:uid(),name:src.name,brand:src.brand||'',barcode:src.barcode||'',per100:src.per100,servingG:src.servingG||100};
+    if(scanMeal==="__builder__"){builderItems.push(food);closeScanner();openBuilder();}
+    else{const meal=scanMeal||"snack";closeScanner();addFood(meal,food);}
+  }));
+}
+document.getElementById("optScan").addEventListener("click",()=>{showScanPanel("scanPanelScan");document.getElementById("scanStatus").textContent="Point your camera at a food barcode…";startCamera();});
+document.getElementById("optType").addEventListener("click",()=>{showScanPanel("scanPanelType");setTimeout(()=>document.getElementById("scanManualInput").focus(),50);});
+document.getElementById("optSearch").addEventListener("click",()=>{showScanPanel("scanPanelSearch");setTimeout(()=>document.getElementById("scanSearchInput").focus(),50);});
+document.getElementById("optSaved").addEventListener("click",()=>{showScanPanel("scanPanelSaved");renderSavedPanel();});
+document.getElementById("scanBackBtn").addEventListener("click",()=>showScanPanel(null));
 function pushRecent(f){
   recentFoods=recentFoods.filter(r=>!(r.name===f.name&&(r.barcode||'')===(f.barcode||'')));
   recentFoods.unshift({name:f.name,brand:f.brand||'',per100:f.per100,servingG:f.servingG,barcode:f.barcode||''});
@@ -1622,7 +1664,7 @@ async function lookupBarcode(code){
   try{
     const r=await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(code)}.json?fields=product_name,brands,nutriments,serving_quantity,nutrition_data_per`);
     const j=await r.json();
-    if(!j.product){st.textContent="Product not found — try scanning again or type the barcode.";startCamera();return;}
+    if(!j.product){st.textContent="Product not found — try scanning again or type the barcode.";if(document.getElementById("scanPanelScan").style.display!=="none")startCamera();return;}
     const p=j.product;
     const nu=parseNutriments(p);
     scanProduct={name:p.product_name||"Unknown product",brand:p.brands||"",barcode:code,
@@ -1687,7 +1729,7 @@ async function searchFoods(){
 document.getElementById("scanSearchBtn").addEventListener("click",searchFoods);
 document.getElementById("scanSearchInput").addEventListener("keydown",e=>{if(e.key==="Enter")searchFoods();});
 document.getElementById("srServing").addEventListener("input",updateScanMacros);
-document.getElementById("srBack").addEventListener("click",()=>{scanProduct=null;document.getElementById("scanResult").style.display="none";document.getElementById("scanLive").style.display="block";document.getElementById("scanSearchResults").innerHTML="";document.getElementById("scanStatus").textContent="Point your camera at a food barcode…";startCamera();});
+document.getElementById("srBack").addEventListener("click",()=>{scanProduct=null;document.getElementById("scanResult").style.display="none";document.getElementById("scanLive").style.display="block";document.getElementById("scanSearchResults").innerHTML="";showScanPanel(null);});
 document.getElementById("srAdd").addEventListener("click",()=>{
   if(!scanProduct)return;
   const g=parseFloat(document.getElementById("srServing").value);
