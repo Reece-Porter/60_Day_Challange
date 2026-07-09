@@ -778,6 +778,8 @@ let builderItems=[],builderName=""; // meal builder in-progress state
 let weights={},photoCache={};
 let startWeight={value:null,date:"",label:""};
 let day1PhotoLabel="Before";
+let weightRange="days"; // chart range: days | weeks | months | years
+let calcInputs={age:null,sex:"male",height:null,activity:1.55,goal:"cut"};
 let weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));
 let customSessions=[...DEFAULT_SESSIONS];
 let customAbs=[...DEFAULT_ABS];
@@ -1110,8 +1112,36 @@ function render(){
       <div class="pg-col">${absCard}</div>
     </div>`;
   }else if(activeTab==="weight"){
+    const calcCard=`<div class="card">
+      ${cardHd('calc','BMI & calorie calculator','',true)}
+      ${cardBody('calc',`
+        <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Work out your BMI and how much you should be eating for your goal.</p>
+        <div class="macro-grid">
+          <div class="macro-field"><label>Age</label><input type="number" id="cc_age" min="10" max="100" value="${calcInputs.age||''}" placeholder="years"></div>
+          <div class="macro-field"><label>Sex</label><select id="cc_sex" class="saved-meal-sel" style="width:100%;font-size:15px;font-weight:700;padding:10px 12px"><option value="male"${calcInputs.sex==="male"?" selected":""}>Male</option><option value="female"${calcInputs.sex==="female"?" selected":""}>Female</option></select></div>
+          <div class="macro-field"><label>Height</label><input type="number" id="cc_h" min="100" max="250" value="${calcInputs.height||''}" placeholder="cm"><div class="unit">cm</div></div>
+          <div class="macro-field"><label>Weight</label><input type="number" step="0.1" id="cc_w" value="${latestW||''}" placeholder="kg"><div class="unit">kg — prefilled from your log</div></div>
+        </div>
+        <div class="e-label" style="margin-top:4px">Activity level</div>
+        <select id="cc_act" class="saved-meal-sel" style="width:100%;margin-bottom:12px;font-size:13px;padding:10px 12px">
+          <option value="1.2"${calcInputs.activity==1.2?" selected":""}>Sedentary — desk job, little exercise</option>
+          <option value="1.375"${calcInputs.activity==1.375?" selected":""}>Light — exercise 1–3 days/week</option>
+          <option value="1.55"${calcInputs.activity==1.55?" selected":""}>Moderate — exercise 3–5 days/week</option>
+          <option value="1.725"${calcInputs.activity==1.725?" selected":""}>Active — hard exercise 6–7 days/week</option>
+          <option value="1.9"${calcInputs.activity==1.9?" selected":""}>Very active — physical job + training</option>
+        </select>
+        <div class="e-label">Goal</div>
+        <select id="cc_goal" class="saved-meal-sel" style="width:100%;margin-bottom:14px;font-size:13px;padding:10px 12px">
+          <option value="cut"${calcInputs.goal==="cut"?" selected":""}>Lose fat (−20% deficit)</option>
+          <option value="recomp"${calcInputs.goal==="recomp"?" selected":""}>Recomp — maintain weight, build muscle</option>
+          <option value="gain"${calcInputs.goal==="gain"?" selected":""}>Build muscle (+10% surplus)</option>
+        </select>
+        <button class="s-save-btn" id="ccCalc">Calculate</button>
+        <div id="ccResults"></div>
+      `,true)}
+    </div>`;
     app.innerHTML=`<div class="page-grid">
-      <div class="pg-col">${photosCard}</div>
+      <div class="pg-col">${photosCard}${calcCard}</div>
       <div class="pg-col">${weightCard}</div>
     </div>`;
   }else if(activeTab==="settings"){
@@ -1124,7 +1154,7 @@ function render(){
     dayState.steps=v;persistDay();updateXPAfterFood();render();
   });
   document.getElementById("syncStepsDaily")?.addEventListener("click",()=>checkStepsInbox(false));
-  app.querySelectorAll(".seg button").forEach(el=>el.addEventListener("click",()=>pickSession(el.dataset.sess)));
+  app.querySelectorAll(".seg button[data-sess]").forEach(el=>el.addEventListener("click",()=>pickSession(el.dataset.sess)));
   document.getElementById("esbSettingsBtn")?.addEventListener("click",openSettings);
   document.getElementById("resetBtn")?.addEventListener("click",resetDay);
   document.getElementById("wLog")?.addEventListener("click",logWeight);
@@ -1153,6 +1183,7 @@ function render(){
   });
   document.getElementById("syncStepsSum")?.addEventListener("click",()=>checkStepsInbox(false));
   document.getElementById("syncStepsNut")?.addEventListener("click",()=>checkStepsInbox(false));
+  document.getElementById("ccCalc")?.addEventListener("click",runCalculator);
   const wi=document.getElementById("wInput");if(wi&&weights[viewKey]!=null)wi.value=weights[viewKey];
   // Food tracker
   app.querySelectorAll(".scan-btn[data-meal]").forEach(b=>b.addEventListener("click",()=>openScanner(b.dataset.meal)));
@@ -1173,6 +1204,57 @@ function render(){
   }));
   renderPhotos();renderWeight();renderWeek();renderQuote();checkCelebrate();
   if(activeTab==="settings")renderSettings();
+}
+
+// --- BMI & calorie calculator ---
+function runCalculator(){
+  const age=+document.getElementById("cc_age").value||null;
+  const sex=document.getElementById("cc_sex").value;
+  const h=+document.getElementById("cc_h").value||null;
+  const w=+document.getElementById("cc_w").value||null;
+  const act=+document.getElementById("cc_act").value||1.55;
+  const goal=document.getElementById("cc_goal").value;
+  if(!h||!w){alert("Enter at least your height and weight.");return;}
+  calcInputs={age,sex,height:h,activity:act,goal};
+  save("calcInputs",calcInputs);
+  const bmi=w/((h/100)*(h/100));
+  const cat=bmi<18.5?["Underweight","#0EA5E9"]:bmi<25?["Healthy range","#059669"]:bmi<30?["Overweight","#F59E0B"]:["Obese","#e05252"];
+  let html=`<div class="sr-grid" style="grid-template-columns:1fr 1fr;margin-top:14px">
+    <div class="sr-cell"><div class="l">BMI</div><div class="v" style="color:${cat[1]}">${bmi.toFixed(1)}</div></div>
+    <div class="sr-cell"><div class="l">Category</div><div class="v" style="color:${cat[1]};font-size:12px;padding-top:4px">${cat[0]}</div></div>
+  </div>`;
+  if(age){
+    // Mifflin-St Jeor BMR, scaled by activity, adjusted for goal
+    const bmr=10*w+6.25*h-5*age+(sex==="male"?5:-161);
+    const tdee=bmr*act;
+    const adj=goal==="cut"?0.8:goal==="gain"?1.1:1;
+    const kcal=Math.round(tdee*adj/10)*10;
+    const protein=Math.round((goal==="cut"?2.0:1.8)*w);
+    const fat=Math.round(0.9*w);
+    const carbs=Math.max(0,Math.round((kcal-protein*4-fat*9)/4));
+    html+=`<div class="e-label" style="margin-top:12px">Recommended daily intake</div>
+    <div class="sr-grid">
+      <div class="sr-cell"><div class="l">kcal</div><div class="v">${kcal.toLocaleString()}</div></div>
+      <div class="sr-cell"><div class="l">Protein</div><div class="v">${protein}g</div></div>
+      <div class="sr-cell"><div class="l">Fat</div><div class="v">${fat}g</div></div>
+      <div class="sr-cell"><div class="l">Carbs</div><div class="v">${carbs}g</div></div>
+    </div>
+    <p style="font-size:11.5px;color:var(--muted);margin:8px 0 12px;line-height:1.5">Maintenance ≈ ${Math.round(tdee).toLocaleString()} kcal/day (Mifflin-St Jeor). Protein ${goal==="cut"?"2.0":"1.8"}g/kg · fat 0.9g/kg · rest carbs. Estimates — adjust based on how your weight actually trends.</p>
+    <button class="s-save-btn" id="ccApply">Apply to my nutrition goals</button>`;
+  }else{
+    html+=`<p style="font-size:12px;color:var(--muted);margin-top:10px">Add your age to get calorie & macro recommendations.</p>`;
+  }
+  const res=document.getElementById("ccResults");
+  res.innerHTML=html;
+  res.querySelector("#ccApply")?.addEventListener("click",()=>{
+    const kcal=Math.round((10*w+6.25*h-5*age+(sex==="male"?5:-161))*act*(goal==="cut"?0.8:goal==="gain"?1.1:1)/10)*10;
+    macroGoals.calories=kcal;
+    macroGoals.protein=Math.round((goal==="cut"?2.0:1.8)*w);
+    macroGoals.fat=Math.round(0.9*w);
+    macroGoals.carbs=Math.max(0,Math.round((kcal-macroGoals.protein*4-macroGoals.fat*9)/4));
+    save("macroGoals",macroGoals);
+    showSettingsToast("Nutrition goals updated ✓");
+  });
 }
 
 function refreshPlanToday(){
@@ -1199,7 +1281,25 @@ function resizeAndSave(file,key,onDone){const reader=new FileReader();reader.onl
 function handlePhoto1(file){resizeAndSave(file,DAY1_PHOTO_KEY,renderPhotos);}
 function handlePhoto2(file){resizeAndSave(file,viewKey,renderPhotos);}
 
-function buildWeightChart(entries){const W=300,H=140,PAD={t:18,r:14,b:28,l:44};const cw=W-PAD.l-PAD.r,ch=H-PAD.t-PAD.b;const vals=entries.map(e=>e[1]);const mn=Math.min(...vals),mx=Math.max(...vals),rng=(mx-mn)||1;const xOf=i=>PAD.l+(entries.length<2?cw/2:(i/(entries.length-1))*cw);const yOf=v=>PAD.t+ch-((v-mn)/rng)*ch;let yAxis='';for(let i=0;i<=3;i++){const v=mn+(rng*i/3),y=yOf(v);yAxis+=`<line x1="${PAD.l}" y1="${y.toFixed(1)}" x2="${PAD.l+cw}" y2="${y.toFixed(1)}" stroke="currentColor" stroke-width=".5" opacity=".12"/><text x="${PAD.l-6}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="9.5" fill="currentColor" opacity=".55">${v.toFixed(1)}</text>`;}let xAxis='';const xi=new Set([0]);if(entries.length>1)xi.add(entries.length-1);if(entries.length>2)xi.add(Math.floor((entries.length-1)/2));xi.forEach(i=>{const d=new Date(entries[i][0]+'T00:00:00');xAxis+=`<text x="${xOf(i).toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="9.5" fill="currentColor" opacity=".55">${d.toLocaleDateString(undefined,{day:'numeric',month:'short'})}</text>`;});const linePts=entries.map((e,i)=>`${xOf(i).toFixed(1)},${yOf(e[1]).toFixed(1)}`).join(' ');const last=entries.length-1;const area=entries.length>=2?`<polygon points="${xOf(0).toFixed(1)},${(PAD.t+ch).toFixed(1)} ${linePts} ${xOf(last).toFixed(1)},${(PAD.t+ch).toFixed(1)}" fill="#2E7D54" opacity=".1"/>`:'';const line=entries.length>=2?`<polyline points="${linePts}" fill="none" stroke="#2E7D54" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`:'';let circles='';entries.forEach((e,i)=>{const x=xOf(i),y=yOf(e[1]),here=e[0]===viewKey;circles+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${here?5:3.5}" fill="${here?'#2E7D54':'var(--card)'}" stroke="#2E7D54" stroke-width="1.8"/>`;if(here||entries.length<=6)circles+=`<text x="${x.toFixed(1)}" y="${(y-10).toFixed(1)}" text-anchor="middle" font-size="9" fill="currentColor" opacity="${here?.9:.55}" font-weight="${here?700:400}">${e[1]}</text>`;});return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;color:var(--ink)">${yAxis}${area}${line}${circles}${xAxis}</svg>`;}
+function chartLabelFmt(mode){
+  if(mode==="months")return{month:'short',year:'2-digit'};
+  if(mode==="years")return{year:'numeric'};
+  return{day:'numeric',month:'short'};
+}
+function aggregateWeights(entries){
+  if(weightRange==="days")return entries.slice(-31);
+  const groups={};
+  entries.forEach(([k,v])=>{
+    const d=new Date(k+"T00:00:00");let gk;
+    if(weightRange==="weeks"){const wd=new Date(d);wd.setDate(d.getDate()-d.getDay());gk=dkey(wd);}
+    else if(weightRange==="months")gk=k.slice(0,7)+"-15";
+    else gk=k.slice(0,4)+"-07-01";
+    (groups[gk]=groups[gk]||[]).push(v);
+  });
+  return Object.entries(groups).sort((a,b)=>a[0]<b[0]?-1:1)
+    .map(([k,vs])=>[k,+(vs.reduce((a,b)=>a+b,0)/vs.length).toFixed(1)]).slice(-31);
+}
+function buildWeightChart(entries,mode){const W=300,H=140,PAD={t:18,r:14,b:28,l:44};const cw=W-PAD.l-PAD.r,ch=H-PAD.t-PAD.b;const vals=entries.map(e=>e[1]);const mn=Math.min(...vals),mx=Math.max(...vals),rng=(mx-mn)||1;const xOf=i=>PAD.l+(entries.length<2?cw/2:(i/(entries.length-1))*cw);const yOf=v=>PAD.t+ch-((v-mn)/rng)*ch;let yAxis='';for(let i=0;i<=3;i++){const v=mn+(rng*i/3),y=yOf(v);yAxis+=`<line x1="${PAD.l}" y1="${y.toFixed(1)}" x2="${PAD.l+cw}" y2="${y.toFixed(1)}" stroke="currentColor" stroke-width=".5" opacity=".12"/><text x="${PAD.l-6}" y="${(y+4).toFixed(1)}" text-anchor="end" font-size="9.5" fill="currentColor" opacity=".55">${v.toFixed(1)}</text>`;}let xAxis='';const xi=new Set([0]);if(entries.length>1)xi.add(entries.length-1);if(entries.length>2)xi.add(Math.floor((entries.length-1)/2));xi.forEach(i=>{const d=new Date(entries[i][0]+'T00:00:00');xAxis+=`<text x="${xOf(i).toFixed(1)}" y="${H-4}" text-anchor="middle" font-size="9.5" fill="currentColor" opacity=".55">${d.toLocaleDateString(undefined,chartLabelFmt(mode))}</text>`;});const linePts=entries.map((e,i)=>`${xOf(i).toFixed(1)},${yOf(e[1]).toFixed(1)}`).join(' ');const last=entries.length-1;const area=entries.length>=2?`<polygon points="${xOf(0).toFixed(1)},${(PAD.t+ch).toFixed(1)} ${linePts} ${xOf(last).toFixed(1)},${(PAD.t+ch).toFixed(1)}" fill="#2E7D54" opacity=".1"/>`:'';const line=entries.length>=2?`<polyline points="${linePts}" fill="none" stroke="#2E7D54" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`:'';let circles='';entries.forEach((e,i)=>{const x=xOf(i),y=yOf(e[1]),here=e[0]===viewKey;circles+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${here?5:3.5}" fill="${here?'#2E7D54':'var(--card)'}" stroke="#2E7D54" stroke-width="1.8"/>`;if(here||entries.length<=6)circles+=`<text x="${x.toFixed(1)}" y="${(y-10).toFixed(1)}" text-anchor="middle" font-size="9" fill="currentColor" opacity="${here?.9:.55}" font-weight="${here?700:400}">${e[1]}</text>`;});return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;color:var(--ink)">${yAxis}${area}${line}${circles}${xAxis}</svg>`;}
 function renderWeight(){const body=document.getElementById("wBody");if(!body)return;
   // Build entries: startWeight (if set) + daily logs, deduplicated by date (daily log wins if same date)
   const daily=Object.entries(weights).sort((a,b)=>a[0]<b[0]?-1:1);
@@ -1212,9 +1312,16 @@ function renderWeight(){const body=document.getElementById("wBody");if(!body)ret
   const first=entries[0][1],latest=entries[entries.length-1][1],diff=+(latest-first).toFixed(1);
   const cls=diff<=0?'down':'up',sign=diff>0?'+':'';
   let html=`<div class="w-stats"><div class="w-stat"><div class="l">Start</div><div class="v">${first} kg</div></div><div class="w-stat"><div class="l">Latest</div><div class="v">${latest} kg</div></div><div class="w-stat"><div class="l">Change</div><div class="v ${cls}">${sign}${diff} kg</div></div></div>`;
-  if(entries.length>=2){html+=`<div class="w-chart">${buildWeightChart(entries)}</div>`;const prev=entries[entries.length-2],curr=entries[entries.length-1];const d=+(curr[1]-prev[1]).toFixed(2),s2=d>0?'+':'',c2=d<=0?'neg':'pos';const days=Math.round((new Date(curr[0])-new Date(prev[0]+'T00:00:00'))/86400000);html+=`<div class="w-diff"><span class="label">vs ${days===1?'yesterday':`${days} days ago`} (${shortD(new Date(prev[0]+'T00:00:00'))})</span><span class="val ${c2}">${s2}${d} kg</span></div>`;}
-  else html+='<div class="w-empty" style="margin-bottom:10px">One more entry and your chart appears.</div>';
+  const RANGES=[["days","Days"],["weeks","Weeks"],["months","Months"],["years","Years"]];
+  html+='<div class="seg" style="margin-bottom:8px">'+RANGES.map(([r,l])=>`<button data-range="${r}" class="${weightRange===r?'active':''}">${l}</button>`).join('')+'</div>';
+  const agg=aggregateWeights(entries);
+  if(agg.length>=2){html+=`<div class="w-chart">${buildWeightChart(agg,weightRange)}</div>`;
+    const prev=agg[agg.length-2],curr=agg[agg.length-1];const d=+(curr[1]-prev[1]).toFixed(2),s2=d>0?'+':'',c2=d<=0?'neg':'pos';
+    const unit={days:"day",weeks:"week",months:"month",years:"year"}[weightRange];
+    html+=`<div class="w-diff"><span class="label">vs previous ${unit} (${new Date(prev[0]+'T00:00:00').toLocaleDateString(undefined,chartLabelFmt(weightRange))})</span><span class="val ${c2}">${s2}${d.toFixed(1)} kg</span></div>`;}
+  else html+='<div class="w-empty" style="margin-bottom:10px">Not enough data in this range yet — log more entries.</div>';
   body.innerHTML=html;
+  body.querySelectorAll("[data-range]").forEach(b=>b.addEventListener("click",()=>{weightRange=b.dataset.range;renderWeight();}));
 }
 function renderQuote(){const el=document.getElementById("quoteCard");if(!el)return;const seed=realToday.getFullYear()*10000+((realToday.getMonth()+1)*100)+realToday.getDate();const q=QUOTES[seed%QUOTES.length];el.innerHTML=`<div class="qc-label">Quote of the day</div><div class="qc-text">"${q}"</div><div class="qc-warning">⚠️ Don't let future-you down. Every day you skip makes the next one harder — stay locked in or live with the regret.</div>`;}
 function pad2(n){return String(Math.floor(n)).padStart(2,'0');}
@@ -1891,7 +1998,7 @@ document.getElementById("authSubmit").addEventListener("click",async()=>{
 });
 document.getElementById("authPassword").addEventListener("keydown",e=>{if(e.key==="Enter")document.getElementById("authSubmit").click();});
 document.getElementById("authGoogle").addEventListener("click",async()=>{authErr("");try{await signInWithPopup(auth,gProvider);}catch(e){authErr(e.code==='auth/popup-closed-by-user'?'Sign-in cancelled.':e.message);}});
-document.getElementById("signOutBtn").addEventListener("click",async()=>{await signOut(auth);_cache=null;DATA_DOC=null;dayState={session:null,checked:{},food:"",water:0,meals:{}};savedMeals=[];recentFoods=[];builderItems=[];builderName="";stepsToken=null;START=new Date(2026,5,11);TARGET=new Date(2026,7,12);applyChallengeDates();weights={};photoCache={};startWeight={value:null,date:"",label:""};day1PhotoLabel="Before";weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];macroGoals={...DEFAULT_MACRO_GOALS};xpData={total:0,days:{}};celebrated={};applyColorTheme("default");document.getElementById("mainApp").style.display="none";document.getElementById("authScreen").style.display="flex";document.getElementById("authEmail").value="";document.getElementById("authPassword").value="";});
+document.getElementById("signOutBtn").addEventListener("click",async()=>{await signOut(auth);_cache=null;DATA_DOC=null;dayState={session:null,checked:{},food:"",water:0,meals:{}};savedMeals=[];recentFoods=[];builderItems=[];builderName="";stepsToken=null;weightRange="days";calcInputs={age:null,sex:"male",height:null,activity:1.55,goal:"cut"};START=new Date(2026,5,11);TARGET=new Date(2026,7,12);applyChallengeDates();weights={};photoCache={};startWeight={value:null,date:"",label:""};day1PhotoLabel="Before";weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];macroGoals={...DEFAULT_MACRO_GOALS};xpData={total:0,days:{}};celebrated={};applyColorTheme("default");document.getElementById("mainApp").style.display="none";document.getElementById("authScreen").style.display="flex";document.getElementById("authEmail").value="";document.getElementById("authPassword").value="";});
 
 // ── Auth State ──
 async function migrateOldData(){try{const userSnap=await getDoc(DATA_DOC);if(userSnap.exists()&&Object.keys(userSnap.data()).length>0)return false;const oldSnap=await getDoc(doc(fsdb,'recomp','main'));if(!oldSnap.exists())return false;const oldData=oldSnap.data();await setDoc(DATA_DOC,oldData);_cache={...oldData};return true;}catch(e){return false;}}
@@ -1922,6 +2029,7 @@ onAuthStateChanged(auth,async user=>{
   const mg=await load("macroGoals");if(mg)macroGoals={...DEFAULT_MACRO_GOALS,...mg};
   const sm=await load("savedMeals");savedMeals=sm||[];
   const rf=await load("recentFoods");recentFoods=rf||[];
+  const ci=await load("calcInputs");if(ci)calcInputs=ci;
   const xp=await load("xpData");if(xp)xpData=xp;
   await loadDay();
   await ensureStepsToken();
