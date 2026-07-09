@@ -809,6 +809,26 @@ function showXPToast(g){if(g<=0)return;const t=document.createElement("div");t.c
 function showLevelUpPopup(info){const ov=document.createElement("div");ov.className="celeb-overlay";ov.innerHTML=`<div class="level-up-box"><span class="ce-emoji">⚡</span><h3>Level ${info.level}!</h3><p>${info.name}</p><button id="lvlClose">Keep going →</button></div>`;document.body.appendChild(ov);ov.querySelector("#lvlClose").addEventListener("click",()=>ov.remove());ov.addEventListener("click",e=>{if(e.target===ov)ov.remove();});}
 
 // --- Progress ---
+// All-time steps: sums the per-day stored value for every day, so re-syncing
+// a day can never double-count — a sync overwrites that day's number.
+function totalStepsAll(){
+  let t=0;const cache=_cache||{};
+  for(const k in cache){
+    if(/^\d{4}-\d{2}-\d{2}$/.test(k)&&k!==viewKey){
+      const v=cache[k];
+      if(v&&v.steps)t+=Math.max(0,Math.round(+v.steps||0));
+    }
+  }
+  t+=Math.max(0,Math.round(+dayState.steps||0));
+  return t;
+}
+const STEP_MILESTONES=[10000,25000,50000,100000,250000,500000,750000,1000000,1500000,2000000,3000000,5000000];
+function stepMilestone(total){
+  let prev=0;
+  for(const m of STEP_MILESTONES){if(total<m)return{prev,next:m};prev=m;}
+  const next=Math.ceil((total+1)/1000000)*1000000;
+  return{prev,next};
+}
 function barTotal(){const sess=sessById(dayState.session);return DAILY.length+1+4+(sess?sess.items.length:0);}
 function barDone(){const sess=sessById(dayState.session);let ids=[...DAILY.map(d=>d.id),...(sess?sess.items.map(i=>i.id):[])];const stepsDone=(+dayState.steps||0)>=(macroGoals.stepsGoal||8000);return ids.filter(id=>dayState.checked[id]).length+macroHitCount(dayState)+(stepsDone?1:0);}
 
@@ -1026,11 +1046,26 @@ function render(){
     </div>
   </div>`;
 
+  // All-time steps counter
+  const allSteps=totalStepsAll();
+  const ms=stepMilestone(allSteps);
+  const msPct=Math.min(100,Math.round((allSteps-ms.prev)/(ms.next-ms.prev)*100));
+  const kmWalked=(allSteps*0.00075).toFixed(1);
+  const allStepsCard=`<div class="card">
+    <div class="card-hd open" style="cursor:default">👟 All-time steps</div>
+    <div class="card-body">
+      <div class="st-val" style="font-size:30px;margin:0 0 2px">${allSteps.toLocaleString()}</div>
+      <div class="st-sub" style="display:block;margin-bottom:10px">≈ ${kmWalked} km walked · every synced or typed day counts once</div>
+      <div class="mb-track" style="height:9px"><div class="mb-fill" style="width:${msPct}%"></div></div>
+      <div class="mb-top" style="margin-top:6px"><span class="mb-val">${ms.prev?ms.prev.toLocaleString()+' ✓':''}</span><span class="mb-val">${(ms.next-allSteps).toLocaleString()} to go → ${ms.next.toLocaleString()}</span></div>
+    </div>
+  </div>`;
+
   // ── Compose page by active tab ──
   const app=document.getElementById("app");app.className="";
   if(activeTab==="summary"){
     app.innerHTML=`<div class="page-grid">
-      <div class="pg-col">${statsCard}${dailyCard}${weekCard}</div>
+      <div class="pg-col">${statsCard}${dailyCard}${allStepsCard}${weekCard}</div>
       <div class="pg-col">${planCard}<div class="quote-card" id="quoteCard" style="margin-top:14px"></div></div>
     </div>
     <button class="reset" id="resetBtn">Reset this day's ticks</button>
