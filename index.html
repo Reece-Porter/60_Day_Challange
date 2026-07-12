@@ -1174,7 +1174,7 @@ function render(){
           <div class="macro-field"><label>Age</label><input type="number" id="cc_age" min="10" max="100" value="${calcInputs.age||''}" placeholder="years"></div>
           <div class="macro-field"><label>Sex</label><select id="cc_sex" class="saved-meal-sel" style="width:100%;font-size:15px;font-weight:700;padding:10px 12px"><option value="male"${calcInputs.sex==="male"?" selected":""}>Male</option><option value="female"${calcInputs.sex==="female"?" selected":""}>Female</option></select></div>
           <div class="macro-field"><label>Height</label><input type="number" id="cc_h" min="100" max="250" value="${calcInputs.height||''}" placeholder="cm"><div class="unit">cm</div></div>
-          <div class="macro-field"><label>Weight</label><input type="number" step="0.1" id="cc_w" value="${lastCalcW||latestW||''}" placeholder="kg"><div class="unit">kg — prefilled from your log</div></div>
+          <div class="macro-field"><label>Weight</label><input type="number" step="0.1" id="cc_w" value="${lastCalcW||calcInputs.weight||latestW||''}" placeholder="kg"><div class="unit">kg — prefilled from your log</div></div>
         </div>
         <div class="e-label" style="margin-top:4px">Activity level</div>
         <select id="cc_act" class="saved-meal-sel" style="width:100%;margin-bottom:12px;font-size:13px;padding:10px 12px">
@@ -1357,7 +1357,7 @@ function render(){
   });
   document.getElementById("syncStepsSum")?.addEventListener("click",()=>checkStepsInbox(false));
   document.getElementById("syncStepsNut")?.addEventListener("click",()=>checkStepsInbox(false));
-  document.getElementById("ccCalc")?.addEventListener("click",runCalculator);
+  document.getElementById("ccCalc")?.addEventListener("click",()=>runCalculator(false));
   const wi=document.getElementById("wInput");if(wi&&weights[viewKey]!=null)wi.value=weights[viewKey];
   // Food tracker
   app.querySelectorAll(".scan-btn[data-meal]").forEach(b=>b.addEventListener("click",()=>openScanner(b.dataset.meal)));
@@ -1428,6 +1428,7 @@ function calcTdee(w){
   return bmr*(calcInputs.activity||1.55);
 }
 function runCalculator(auto){
+  auto=auto===true; // guard: when wired straight to a click event, the event object must not read as auto
   const age=+document.getElementById("cc_age").value||null;
   const sex=document.getElementById("cc_sex").value;
   const h=+document.getElementById("cc_h").value||null;
@@ -1437,7 +1438,7 @@ function runCalculator(auto){
   const intensity=document.getElementById("cc_int").value||"moderate";
   if(!h||!w){if(!auto)alert("Enter at least your height and weight.");return;}
   if(!auto){
-    calcInputs={age,sex,height:h,activity:act,goal,intensity};planGoal=goal;lastCalcW=w;
+    calcInputs={age,sex,height:h,activity:act,goal,intensity,weight:w};planGoal=goal;lastCalcW=w;
     save("calcInputs",calcInputs);
     render(); // refresh the Plans card & timelines with the new goal+intensity (auto-run repaints these results)
     return;
