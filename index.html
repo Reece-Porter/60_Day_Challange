@@ -311,6 +311,13 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
   gap:6px;padding:12px 0}
 .focus-visual{display:flex;justify-content:center}
 .pose{width:148px;height:148px;display:block}
+.pose-wrap{text-align:center}
+.pose .frame{opacity:0;transition:opacity .1s linear}
+.pose .frame.on{opacity:1}
+.pose-step{font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
+  color:var(--text-3);margin-top:2px}
+.focus.work .pose-step{color:var(--accent)}
+.focus.rest .pose-step{color:var(--night)}
 .pose .fig{fill:none;stroke:var(--text-2);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
 .pose .hd{fill:var(--text-2)}
 .pose .gnd{stroke:var(--line-2);stroke-width:2.5;stroke-linecap:round}
@@ -1329,31 +1336,69 @@ function kbToggleLabel(st){
   if(kbTimer.running)return"Pause";
   return st.elapsed>0?"Resume":"Start";
 }
-/* stylised side-view poses — stroke figures with the bell in accent */
+/* Side-view poses. Each move is a sequence of frames covering the range of
+   motion, cycled on a loop so the figure demonstrates a full rep. */
 const BELL=(x,y,up)=>`<g class="bell"><circle cx="${x}" cy="${y}" r="5.5"/><path d="M${x-4.5} ${up?y-3:y+3} q4.5 ${up?-6:6} 9 0"/></g>`;
 const GND='<line class="gnd" x1="16" y1="92" x2="84" y2="92"/>';
+const HD=(x,y)=>`<circle class="hd" cx="${x}" cy="${y}" r="6"/>`;
+const L=d=>`<path class="fig" d="${d}"/>`;
+
 const POSES={
-  kb_swing:GND+'<circle class="hd" cx="32" cy="30" r="6"/><path class="fig" d="M36 35 L54 55"/>'+
-    '<path class="fig" d="M39 39 L64 47"/><path class="fig" d="M54 55 L52 73 L57 90"/>'+BELL(70,49,1),
-  kb_squat:GND+'<circle class="hd" cx="42" cy="24" r="6"/><path class="fig" d="M43 30 L46 58"/>'+
-    '<path class="fig" d="M44 38 L37 44"/><path class="fig" d="M46 58 L61 67 L56 90"/>'+BELL(33,46,1),
-  kb_floor:GND+'<circle class="hd" cx="24" cy="82" r="6"/><path class="fig" d="M30 85 L58 85"/>'+
-    '<path class="fig" d="M58 85 L68 71 L79 88"/><path class="fig" d="M42 84 L42 66"/>'+BELL(42,59,0),
-  kb_row:GND+'<circle class="hd" cx="28" cy="36" r="6"/><path class="fig" d="M32 41 L56 52"/>'+
-    '<path class="fig" d="M37 45 L45 61"/><path class="fig" d="M56 52 L56 72 L59 90"/>'+BELL(46,68,1),
-  kb_lunge:GND+'<circle class="hd" cx="46" cy="20" r="6"/><path class="fig" d="M47 26 L48 52"/>'+
-    '<path class="fig" d="M48 36 L40 42"/><path class="fig" d="M48 52 L38 70 L36 90"/>'+
-    '<path class="fig" d="M48 52 L64 69 L73 88"/>'+BELL(35,45,1),
-  kb_press:GND+'<circle class="hd" cx="44" cy="30" r="6"/><path class="fig" d="M45 36 L47 60"/>'+
-    '<path class="fig" d="M45 39 L55 25"/><path class="fig" d="M45 42 L38 55"/>'+
-    '<path class="fig" d="M47 60 L42 90"/><path class="fig" d="M47 60 L54 90"/>'+BELL(58,18,0),
-  kb_curl:GND+'<circle class="hd" cx="46" cy="24" r="6"/><path class="fig" d="M47 30 L48 58"/>'+
-    '<path class="fig" d="M46 36 L44 50 L55 45"/><path class="fig" d="M48 58 L44 90"/>'+
-    '<path class="fig" d="M48 58 L54 90"/>'+BELL(60,43,0),
-  kb_twist:GND+'<path class="fig" d="M43 77 L34 55"/><circle class="hd" cx="32" cy="49" r="6"/>'+
-    '<path class="fig" d="M43 77 L61 71 L71 83"/><path class="fig" d="M37 61 L52 63"/>'+BELL(57,64,1),
+  kb_swing:[
+    {l:"Hinge back", s:GND+HD(26,40)+L("M31 44 L56 54")+L("M33 47 L45 68")+L("M56 54 L57 73 L54 90")+BELL(43,74,1)},
+    {l:"Drive tall", s:GND+HD(46,22)+L("M47 28 L50 58")+L("M47 36 L69 44")+L("M50 58 L48 90")+BELL(75,46,1)},
+  ],
+  kb_squat:[
+    {l:"Stand tall", s:GND+HD(44,20)+L("M45 26 L48 58")+L("M45 34 L38 40")+L("M48 58 L46 90")+BELL(34,42,1)},
+    {l:"Sit deep",   s:GND+HD(40,30)+L("M41 36 L46 60")+L("M42 42 L36 48")+L("M46 60 L62 68 L56 90")+BELL(32,50,1)},
+  ],
+  kb_floor:[
+    {l:"Elbow down", s:GND+HD(24,82)+L("M30 85 L58 85")+L("M58 85 L68 71 L79 88")+L("M42 84 L46 75")+BELL(47,70,0)},
+    {l:"Press up",   s:GND+HD(24,82)+L("M30 85 L58 85")+L("M58 85 L68 71 L79 88")+L("M42 84 L42 66")+BELL(42,60,0)},
+  ],
+  kb_row:[
+    {l:"Arm long",    s:GND+HD(28,36)+L("M32 41 L56 52")+L("M37 45 L42 65")+L("M56 52 L56 72 L59 90")+BELL(43,71,1)},
+    {l:"Pull to hip", s:GND+HD(28,36)+L("M32 41 L56 52")+L("M37 45 L46 56")+L("M56 52 L56 72 L59 90")+BELL(50,58,1)},
+  ],
+  kb_lunge:[
+    {l:"Stand",     s:GND+HD(46,20)+L("M47 26 L48 54")+L("M48 34 L40 40")+L("M48 54 L45 90")+L("M48 54 L53 90")+BELL(36,42,1)},
+    {l:"Step back", s:GND+HD(46,22)+L("M47 28 L48 54")+L("M48 36 L40 42")+L("M48 54 L38 70 L36 90")+L("M48 54 L64 70 L74 88")+BELL(36,44,1)},
+  ],
+  kb_press:[
+    {l:"Racked",     s:GND+HD(44,28)+L("M45 34 L47 60")+L("M45 38 L51 47")+L("M47 60 L42 90")+L("M47 60 L54 90")+BELL(53,41,0)},
+    {l:"Locked out", s:GND+HD(44,30)+L("M45 36 L47 60")+L("M45 39 L55 25")+L("M47 60 L42 90")+L("M47 60 L54 90")+BELL(58,18,0)},
+  ],
+  kb_curl:[
+    {l:"Arms long", s:GND+HD(46,24)+L("M47 30 L48 58")+L("M46 36 L49 53")+L("M48 58 L44 90")+L("M48 58 L54 90")+BELL(52,59,0)},
+    {l:"Curl up",   s:GND+HD(46,24)+L("M47 30 L48 58")+L("M46 36 L44 50 L55 45")+L("M48 58 L44 90")+L("M48 58 L54 90")+BELL(60,43,0)},
+  ],
+  kb_twist:[
+    {l:"Bell left",  s:GND+L("M43 77 L34 55")+HD(32,49)+L("M43 77 L61 71 L71 83")+L("M37 61 L28 66")+BELL(24,68,1)},
+    {l:"Bell right", s:GND+L("M43 77 L34 55")+HD(32,49)+L("M43 77 L61 71 L71 83")+L("M37 61 L52 63")+BELL(57,64,1)},
+  ],
 };
-function poseSvg(id){return `<svg class="pose" viewBox="0 0 100 100">${POSES[id]||""}</svg>`}
+
+let kbFrame=0;
+function poseSvg(id){
+  const fr=POSES[id]||[];
+  return `<div class="pose-wrap" id="poseWrap" data-labels="${fr.map(f=>f.l).join("|")}">
+    <svg class="pose" viewBox="0 0 100 100">
+      ${fr.map((f,i)=>`<g class="frame${i===0?" on":""}">${f.s}</g>`).join("")}
+    </svg>
+    <div class="pose-step" id="poseStep">${fr.length?"1 · "+fr[0].l:""}</div>
+  </div>`;
+}
+/* advance the demonstration loop independently of the countdown */
+function paintFrames(){
+  const wrap=el("poseWrap");if(!wrap)return;
+  const frames=wrap.querySelectorAll(".frame");if(!frames.length)return;
+  const i=kbFrame%frames.length;
+  frames.forEach((f,n)=>f.classList.toggle("on",n===i));
+  const labs=(wrap.dataset.labels||"").split("|");
+  const step=el("poseStep");
+  if(step)step.textContent=(i+1)+" · "+(labs[i]||"");
+}
+setInterval(()=>{kbFrame++;paintFrames()},950);
 
 /* muscle label → regions on the body diagram */
 const MUSCLE_MAP={
@@ -1802,6 +1847,7 @@ function wire(){
   }));
 
   if(activeTab==="progress"){const g=el("gridScroll");if(g)g.scrollLeft=g.scrollWidth}
+  paintFrames();
   if(activeTab==="settings")wireSettings();
 }
 
