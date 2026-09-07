@@ -292,6 +292,64 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
 .info-m{font-size:11.5px;font-weight:700;color:var(--accent);margin-top:5px;line-height:1.5}
 .info-d{font-size:12.5px;color:var(--text-3);line-height:1.65;margin-top:7px;font-weight:500}
 
+
+/* ── workout focus mode ── */
+.focus{min-height:calc(100dvh - 190px);display:flex;flex-direction:column;
+  background:linear-gradient(160deg,#171B21 0%,#0E1114 60%);border:1px solid var(--line);
+  border-radius:var(--r-lg);padding:18px;box-shadow:var(--shadow-2)}
+.focus.work{border-color:var(--accent-line)}
+.focus.rest{border-color:rgba(139,155,255,.28)}
+.focus-top{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+.focus-phase{font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;color:var(--text-3)}
+.focus.work .focus-phase{color:var(--accent)}
+.focus.rest .focus-phase{color:var(--night)}
+.focus-exit{margin-left:auto;width:32px;height:32px;border-radius:50%;background:var(--card-2);
+  border:1px solid var(--line);color:var(--text-3);font-size:13px;cursor:pointer;line-height:1;
+  transition:all .18s var(--ease)}
+.focus-exit:hover{color:var(--text);border-color:var(--line-2)}
+.focus-mid{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;padding:12px 0}
+.focus-visual{display:flex;justify-content:center}
+.pose{width:148px;height:148px;display:block}
+.pose .fig{fill:none;stroke:var(--text-2);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.pose .hd{fill:var(--text-2)}
+.pose .gnd{stroke:var(--line-2);stroke-width:2.5;stroke-linecap:round}
+.pose .bell circle{fill:var(--accent)}
+.pose .bell path{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linecap:round}
+.focus.rest .pose .bell circle{fill:var(--night)}
+.focus.rest .pose .bell path{stroke:var(--night)}
+.focus-info{width:100%;text-align:center;min-width:0}
+.focus-ex{font-size:clamp(19px,5.5vw,26px);font-weight:800;letter-spacing:-.03em}
+.focus-time{font-size:clamp(62px,21vw,92px);font-weight:800;letter-spacing:-.06em;line-height:1;
+  margin:4px 0 12px;font-variant-numeric:tabular-nums}
+.focus.work .focus-time{color:var(--accent)}
+.focus.rest .focus-time{color:var(--night)}
+.focus.done .focus-time,.focus.done .focus-ex{color:var(--accent)}
+.focus-cues{list-style:none;margin:18px auto 0;display:flex;flex-direction:column;gap:8px;
+  text-align:left;max-width:330px}
+.focus-cues li{font-size:13px;color:var(--text-2);font-weight:500;padding-left:16px;position:relative;line-height:1.5}
+.focus-cues li::before{content:"";position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;
+  background:var(--accent)}
+.focus.rest .focus-cues li::before{background:var(--night)}
+.focus-next{font-size:12.5px;font-weight:600;color:var(--text-3);margin-top:16px}
+.focus-foot{flex:0 0 auto}
+.mv-strip{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-bottom:14px}
+.mv-chip{font-size:10px;font-weight:700;padding:4px 9px;border-radius:var(--r-full);
+  background:var(--card-2);border:1px solid var(--line);color:var(--text-3);transition:all .25s var(--ease)}
+.mv-chip.did{color:var(--text-2);border-color:var(--line-2)}
+.mv-chip.now{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.focus.rest .mv-chip.now{background:rgba(139,155,255,.12);border-color:rgba(139,155,255,.32);color:var(--night)}
+.focus.rest .track .fill{background:var(--night)}
+@media(min-width:760px){
+  .focus{padding:26px 30px}
+  .focus-mid{flex-direction:row;gap:34px;align-items:center}
+  .focus-visual{flex:0 0 auto}
+  .pose{width:226px;height:226px}
+  .focus-info{text-align:left;flex:1}
+  .focus-cues{margin-left:0;margin-right:0}
+}
+@media(max-height:680px){.pose{width:112px;height:112px}.focus-cues{margin-top:10px}}
+
 /* kettlebell circuit timer */
 .kb-timer{text-align:center;padding:4px 0 2px}
 .kb-phase{font-size:10.5px;font-weight:800;letter-spacing:.17em;text-transform:uppercase;
@@ -749,28 +807,36 @@ const KB_VIDEO_DEFAULT="https://www.youtube.com/watch?v=ptdB52ggDvo";
 const KETTLEBELL=[
   {id:"kb_swing", name:"Kettlebell swing", sets:"", reps:"30 sec", note:"hips not arms — snap and stand tall",
    works:"Glutes · Hamstrings · Lower back · Core · Grip",
-   about:"A hip-hinge power move. The bell is thrown forward by snapping the hips, not lifted with the arms, so it trains the whole posterior chain and doubles as conditioning."},
+   about:"A hip-hinge power move. The bell is thrown forward by snapping the hips, not lifted with the arms, so it trains the whole posterior chain and doubles as conditioning.",
+   cues:["Hinge at the hips, chest proud","Snap the hips to send it forward","Let it fall back, do not lower it"]},
   {id:"kb_squat", name:"Goblet squat",     sets:"", reps:"30 sec", note:"bell at chest, elbows inside knees",
    works:"Quads · Glutes · Inner thigh · Upper back · Core",
-   about:"Holding the bell at your chest forces the upper back and core to brace while the legs do the work, which also keeps your squat upright and opens the hips."},
+   about:"Holding the bell at your chest forces the upper back and core to brace while the legs do the work, which also keeps your squat upright and opens the hips.",
+   cues:["Bell tight to the chest","Sit down between your knees","Drive up through mid-foot"]},
   {id:"kb_floor", name:"Floor press",      sets:"", reps:"30 sec", note:"on your back, elbows to the floor",
    works:"Chest · Triceps · Front delts",
-   about:"The chest movement of the circuit. Lying down stops you arching and shortens the range at the bottom, so it is kinder to the shoulders than a full bench press."},
+   about:"The chest movement of the circuit. Lying down stops you arching and shortens the range at the bottom, so it is kinder to the shoulders than a full bench press.",
+   cues:["Upper arms rest on the floor","Press straight up, wrist stacked","Pause an inch off the floor"]},
   {id:"kb_row",   name:"Bent-over row",    sets:"", reps:"30 sec", note:"15 sec each side, flat back",
    works:"Lats · Mid-back · Rear delts · Biceps · Grip",
-   about:"The pulling half of the circuit. Your back and biceps move the weight while the hinged position holds the hamstrings and lower back under tension throughout."},
+   about:"The pulling half of the circuit. Your back and biceps move the weight while the hinged position holds the hamstrings and lower back under tension throughout.",
+   cues:["Hinge to about 45 degrees, flat back","Pull the bell to your hip","Squeeze the shoulder blade"]},
   {id:"kb_lunge", name:"Reverse lunge",    sets:"", reps:"30 sec", note:"alternating, bell at chest",
    works:"Quads · Glutes · Hamstrings · Hip flexors · Balance",
-   about:"Single-leg work, so each side is loaded on its own and the smaller hip stabilisers have to keep you steady. Stepping back is easier on the knees than lunging forward."},
+   about:"Single-leg work, so each side is loaded on its own and the smaller hip stabilisers have to keep you steady. Stepping back is easier on the knees than lunging forward.",
+   cues:["Step back, not forward","Back knee to just above the floor","Push through the front heel"]},
   {id:"kb_press", name:"Single-arm press", sets:"", reps:"30 sec", note:"15 sec each side, ribs down",
    works:"Shoulders · Triceps · Obliques · Core",
-   about:"Pressing on one side only means your obliques and deep core have to stop you leaning, so it builds shoulders and anti-tilt core strength at the same time."},
+   about:"Pressing on one side only means your obliques and deep core have to stop you leaning, so it builds shoulders and anti-tilt core strength at the same time.",
+   cues:["Ribs down, glutes tight","Press up, not around your head","Finish with the bicep by your ear"]},
   {id:"kb_curl",  name:"Kettlebell curl",  sets:"", reps:"30 sec", note:"hold the horns, elbows pinned",
    works:"Biceps · Brachialis · Forearms · Grip",
-   about:"Direct arm work. Gripping the horns rather than the handle turns it into a hammer curl, which builds the forearm and the muscle underneath the bicep as well."},
+   about:"Direct arm work. Gripping the horns rather than the handle turns it into a hammer curl, which builds the forearm and the muscle underneath the bicep as well.",
+   cues:["Hold the horns, palms facing in","Elbows pinned to your sides","Lower slower than you lift"]},
   {id:"kb_twist", name:"Russian twist",    sets:"", reps:"30 sec", note:"chest up, rotate through the ribs",
    works:"Obliques · Abs · Deep core",
-   about:"Rotation is the one direction the rest of the circuit misses. Turn through the ribs rather than swinging the arms, and keep your chest tall the whole set."},
+   about:"Rotation is the one direction the rest of the circuit misses. Turn through the ribs rather than swinging the arms, and keep your chest tall the whole set.",
+   cues:["Lean back to about 45 degrees","Rotate through the ribs","Keep the chest tall throughout"]},
 ];
 
 /* 3 rounds × (6×40s work + 5×20s rest) + 2×90s round breaks = 1200s */
@@ -840,7 +906,8 @@ let photoCache={}, day1PhotoLabel="Before";
 let activeTab="today", animateNext=true;
 let collapsed={train:false,abs:false,kb:true};
 let kbVideo=KB_VIDEO_DEFAULT, kbEditing=false;
-let kbTimer={running:false,base:0,startedAt:0};   // base = ms banked while paused
+let kbTimer={running:false,base:0,startedAt:0};
+let kbFocus=false;   // base = ms banked while paused
 let editingSession=null, openSession=null;
 
 const BEFORE_KEY="__day1__";   // unchanged key — keeps existing before-photos
@@ -1075,6 +1142,7 @@ function foldBody(id,inner){
 }
 
 function viewFitness(){
+  if(kbFocus)return kbFocusView();
   const c=todayCounts(), pct=c.total?Math.round(c.done/c.total*100):0;
   const plan=planFor(viewDate);
   const sess=currentSession();
@@ -1155,6 +1223,55 @@ function viewFitness(){
   <button class="btn btn-ghost btn-block" id="resetBtn">Clear this day</button>`;
 }
 
+
+/* While the circuit runs the workout takes over the page. */
+function kbFocusView(){
+  const st=kbState();
+  const cls=st.done?"done":st.seg?(st.seg.type==="work"?"work":"rest"):"";
+  // during a rest we teach the move that is coming up
+  const show=st.done?null:(st.seg.type==="work"?st.seg.ex:st.seg.next);
+  const roundOf=st.done?KB_ROUNDS:st.seg.round;
+  const chips=KETTLEBELL.map(k=>{
+    const cur=show&&k.id===show.id;
+    const did=!!dayState.checked[k.id];
+    return `<span class="mv-chip${cur?" now":""}${did&&!cur?" did":""}">${esc(k.name)}</span>`;
+  }).join("");
+
+  return `
+  <section class="focus ${cls}" id="kbTimer">
+    <div class="focus-top">
+      <div class="focus-phase" id="kbPhase">${kbPhaseText(st)}</div>
+      <button class="focus-exit" id="kbExit" aria-label="Leave workout view">✕</button>
+    </div>
+
+    <div class="focus-mid">
+      <div class="focus-visual">
+        ${show?poseSvg(show.id):'<svg class="pose" viewBox="0 0 100 100"></svg>'}
+      </div>
+      <div class="focus-info">
+        <div class="focus-ex" id="kbEx">${kbExText(st)}</div>
+        <div class="focus-time" id="kbTime">${fmtMS(kbSegLeftMs(st))}</div>
+        <div class="track"><div class="fill" id="kbSegFill" style="width:${kbSegPct(st)}%"></div></div>
+        <ul class="focus-cues">${show?(show.cues||[]).map(c=>`<li>${esc(c)}</li>`).join(""):""}</ul>
+        <div class="focus-next" id="kbNext">${kbNextText(st)}</div>
+      </div>
+    </div>
+
+    <div class="focus-foot">
+      <div class="mv-strip">${chips}</div>
+      <div class="kb-total">
+        <span id="kbTotal">${fmtMS((KB_TOTAL-st.elapsed)*1000)} left</span>
+        <span class="kb-total-of">round ${roundOf} of ${KB_ROUNDS} · of ${fmtMS(KB_TOTAL*1000)}</span>
+      </div>
+      <div class="track"><div class="fill" id="kbFill" style="width:${Math.min(100,st.elapsed/KB_TOTAL*100)}%"></div></div>
+      <div class="kb-ctl">
+        <button class="btn ${kbTimer.running?"btn-ghost":"btn-accent"}" id="kbToggle">${kbToggleLabel(st)}</button>
+        <button class="btn btn-ghost" id="kbReset">Reset</button>
+      </div>
+    </div>
+  </section>`;
+}
+
 function kbTimerHtml(){
   const st=kbState();
   const cls=st.done?"done":st.seg?st.seg.type==="work"?"work":"rest":"";
@@ -1212,6 +1329,32 @@ function kbToggleLabel(st){
   if(kbTimer.running)return"Pause";
   return st.elapsed>0?"Resume":"Start";
 }
+/* stylised side-view poses — stroke figures with the bell in accent */
+const BELL=(x,y,up)=>`<g class="bell"><circle cx="${x}" cy="${y}" r="5.5"/><path d="M${x-4.5} ${up?y-3:y+3} q4.5 ${up?-6:6} 9 0"/></g>`;
+const GND='<line class="gnd" x1="16" y1="92" x2="84" y2="92"/>';
+const POSES={
+  kb_swing:GND+'<circle class="hd" cx="32" cy="30" r="6"/><path class="fig" d="M36 35 L54 55"/>'+
+    '<path class="fig" d="M39 39 L64 47"/><path class="fig" d="M54 55 L52 73 L57 90"/>'+BELL(70,49,1),
+  kb_squat:GND+'<circle class="hd" cx="42" cy="24" r="6"/><path class="fig" d="M43 30 L46 58"/>'+
+    '<path class="fig" d="M44 38 L37 44"/><path class="fig" d="M46 58 L61 67 L56 90"/>'+BELL(33,46,1),
+  kb_floor:GND+'<circle class="hd" cx="24" cy="82" r="6"/><path class="fig" d="M30 85 L58 85"/>'+
+    '<path class="fig" d="M58 85 L68 71 L79 88"/><path class="fig" d="M42 84 L42 66"/>'+BELL(42,59,0),
+  kb_row:GND+'<circle class="hd" cx="28" cy="36" r="6"/><path class="fig" d="M32 41 L56 52"/>'+
+    '<path class="fig" d="M37 45 L45 61"/><path class="fig" d="M56 52 L56 72 L59 90"/>'+BELL(46,68,1),
+  kb_lunge:GND+'<circle class="hd" cx="46" cy="20" r="6"/><path class="fig" d="M47 26 L48 52"/>'+
+    '<path class="fig" d="M48 36 L40 42"/><path class="fig" d="M48 52 L38 70 L36 90"/>'+
+    '<path class="fig" d="M48 52 L64 69 L73 88"/>'+BELL(35,45,1),
+  kb_press:GND+'<circle class="hd" cx="44" cy="30" r="6"/><path class="fig" d="M45 36 L47 60"/>'+
+    '<path class="fig" d="M45 39 L55 25"/><path class="fig" d="M45 42 L38 55"/>'+
+    '<path class="fig" d="M47 60 L42 90"/><path class="fig" d="M47 60 L54 90"/>'+BELL(58,18,0),
+  kb_curl:GND+'<circle class="hd" cx="46" cy="24" r="6"/><path class="fig" d="M47 30 L48 58"/>'+
+    '<path class="fig" d="M46 36 L44 50 L55 45"/><path class="fig" d="M48 58 L44 90"/>'+
+    '<path class="fig" d="M48 58 L54 90"/>'+BELL(60,43,0),
+  kb_twist:GND+'<path class="fig" d="M43 77 L34 55"/><circle class="hd" cx="32" cy="49" r="6"/>'+
+    '<path class="fig" d="M43 77 L61 71 L71 83"/><path class="fig" d="M37 61 L52 63"/>'+BELL(57,64,1),
+};
+function poseSvg(id){return `<svg class="pose" viewBox="0 0 100 100">${POSES[id]||""}</svg>`}
+
 /* muscle label → regions on the body diagram */
 const MUSCLE_MAP={
   "chest":["chest"], "shoulders":["shoulders"], "front delts":["shoulders"], "rear delts":["shoulders"],
@@ -1279,9 +1422,12 @@ function kbPaint(){
       if(navigator.vibrate)try{navigator.vibrate(st.done?[120,60,120]:60)}catch(e){}
     }
     kbLastSeg=st.i;
+    if(kbFocus){render();return}      // new segment → swap pose, cues and chips
   }
 
-  wrap.className="kb-timer "+(st.done?"done":st.seg?(st.seg.type==="work"?"work":"rest"):"");
+  const phase=st.done?"done":st.seg?(st.seg.type==="work"?"work":"rest"):"";
+  wrap.classList.remove("work","rest","done");   // keep the base class (kb-timer or focus)
+  if(phase)wrap.classList.add(phase);
   el("kbPhase").textContent=kbPhaseText(st);
   el("kbEx").textContent=kbExText(st);
   el("kbTime").textContent=fmtMS(kbSegLeftMs(st));
@@ -1603,13 +1749,15 @@ function wire(){
   // kettlebell timer
   el("kbToggle")?.addEventListener("click",()=>{
     if(kbTimer.running){kbStop()}
-    else{kbTimer.startedAt=Date.now();kbTimer.running=true;
-      const b=el("kbToggle");if(b){b.textContent="Pause";b.className="btn btn-ghost"}}
+    else{
+      kbTimer.startedAt=Date.now();kbTimer.running=true;
+      if(!kbFocus){kbFocus=true;render();return}          // starting takes over the page
+      const b=el("kbToggle");if(b){b.textContent="Pause";b.className="btn btn-ghost"}
+    }
   });
+  el("kbExit")?.addEventListener("click",()=>{kbFocus=false;render()});
   el("kbReset")?.addEventListener("click",()=>{
-    kbTimer={running:false,base:0,startedAt:0};kbLastSeg=-1;
-    const b=el("kbToggle");if(b){b.textContent="Start";b.className="btn btn-accent"}
-    kbPaint();
+    kbTimer={running:false,base:0,startedAt:0};kbFocus=false;kbLastSeg=-1;kbFocus=false;render();
   });
   el("kbInfo")?.addEventListener("click",e=>{e.stopPropagation();openKbInfo()});
   el("kbEditUrl")?.addEventListener("click",()=>{kbEditing=true;render()});
@@ -1907,7 +2055,7 @@ async function doSignOut(){
   customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];
   day1PhotoLabel="Before";editingSession=null;activeTab="today";syncNav();
   collapsed={train:false,abs:false,kb:true};kbVideo=KB_VIDEO_DEFAULT;kbEditing=false;
-  kbTimer={running:false,base:0,startedAt:0};
+  kbTimer={running:false,base:0,startedAt:0};kbFocus=false;
   START=parseISO(DEF_START);TARGET=parseISO(DEF_TARGET);applyChallengeDates();
   el("shell").classList.add("hidden");el("navBar").classList.add("hidden");
   el("authScreen").style.display="flex";
