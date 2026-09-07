@@ -896,15 +896,21 @@ const DEFAULT_PLAN={0:{session:"rest",abs:false},1:{session:"chestback",abs:true
 /* Shift rotation: 4 days on · 4 off · 4 nights · 4 off = a 16-day cycle,
    which reads as two 8-day weeks (a days week and a nights week). */
 const CYCLE=16;
+/* The rotation runs 4 off from 9 Sept 2026, so the first block of day shifts
+   starts on the 13th. Everything else is counted from there. */
+const ROTA_ANCHOR="2026-09-13";
+/* Eight gym sessions a cycle, all on shift days, in descending order of
+   demand: the heaviest compound work lands on the freshest day and the
+   isolation work on the fourth, when you are deepest into the block. */
 const DEFAULT_ROTATION={
-  0:{session:"rest",abs:false},        1:{session:"chestback",abs:false},
-  2:{session:"rest",abs:false},        3:{session:"shoulderarms",abs:false},
-  4:{session:"upperA",abs:true},       5:{session:"chestback",abs:false},
-  6:{session:"upperB",abs:true},       7:{session:"rest",abs:false},
-  8:{session:"rest",abs:false},        9:{session:"rest",abs:false},
-  10:{session:"rest",abs:false},       11:{session:"rest",abs:false},
-  12:{session:"upperA",abs:true},      13:{session:"shoulderarms",abs:true},
-  14:{session:"chestback",abs:false},  15:{session:"rest",abs:false},
+  0:{session:"upperA",abs:true},        1:{session:"chestback",abs:false},   // day shifts
+  2:{session:"upperB",abs:true},        3:{session:"shoulderarms",abs:false},
+  4:{session:"rest",abs:false},         5:{session:"rest",abs:false},        // off
+  6:{session:"rest",abs:true},          7:{session:"rest",abs:true},
+  8:{session:"upperA",abs:true},        9:{session:"chestback",abs:false},   // night shifts
+  10:{session:"upperB",abs:true},       11:{session:"shoulderarms",abs:false},
+  12:{session:"rest",abs:false},        13:{session:"rest",abs:false},       // off
+  14:{session:"rest",abs:true},         15:{session:"rest",abs:false},
 };
 /* position → what that day actually is */
 function shiftAt(pos){
@@ -926,8 +932,8 @@ let viewDate=new Date(realToday), viewKey=realKey;
 let dayState=blankDay();
 let weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));
 let rotationPlan=JSON.parse(JSON.stringify(DEFAULT_ROTATION));
-let scheduleMode="week";              // "week" | "rotation"
-let rotationStart=parseISO(DEF_START); // date a block of DAY shifts began
+let scheduleMode="rotation";          // "week" | "rotation"
+let rotationStart=parseISO(ROTA_ANCHOR); // date a block of DAY shifts began
 let customSessions=[...DEFAULT_SESSIONS];
 let customAbs=[...DEFAULT_ABS];
 let photoCache={}, day1PhotoLabel="Before";
@@ -2317,7 +2323,7 @@ async function doSignOut(){
   _cache=null;DATA_DOC=null;dayState=blankDay();photoCache={};
   weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));
   rotationPlan=JSON.parse(JSON.stringify(DEFAULT_ROTATION));
-  scheduleMode="week";rotationStart=parseISO(DEF_START);
+  scheduleMode="rotation";rotationStart=parseISO(ROTA_ANCHOR);
   customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];
   day1PhotoLabel="Before";editingSession=null;activeTab="today";syncNav();
   collapsed={train:false,abs:false,kb:true};kbVideo=KB_VIDEO_DEFAULT;kbEditing=false;
@@ -2363,7 +2369,10 @@ onAuthStateChanged(auth,async user=>{
   const wp=await load("weeklyPlan");if(wp)weeklyPlan=wp;
   const rp=await load("rotationPlan");if(rp)rotationPlan=rp;
   const sm=await load("scheduleMode");if(sm==="rotation"||sm==="week")scheduleMode=sm;
-  const rs=await load("rotationStart");rotationStart=rs?parseISO(rs):parseISO(dkey(START));
+  const rs=await load("rotationStart");
+  // the old default anchored the cycle to the challenge start, which put the
+  // whole rotation four days out — correct it once, leave any other date alone
+  rotationStart=(!rs||rs===DEF_START)?parseISO(ROTA_ANCHOR):parseISO(rs);
   const cs=await load("customSessions");
   if(cs!==null)customSessions=cs;
   else if(isNewUser)customSessions=[];
