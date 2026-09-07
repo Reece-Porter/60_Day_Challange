@@ -533,6 +533,11 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
 .ex-del{flex:0 0 auto;width:28px;height:28px;border-radius:7px;background:none;border:none;color:var(--text-3);
   font-size:17px;cursor:pointer;line-height:1;transition:color .18s var(--ease)}
 .ex-del:hover{color:var(--danger)}
+.ex-mv{flex:0 0 auto;width:22px;height:28px;border-radius:6px;background:none;border:none;color:var(--text-3);
+  font-size:13px;cursor:pointer;line-height:1;transition:color .18s var(--ease)}
+.ex-mv:hover:not(:disabled){color:var(--accent)}
+.ex-mv:disabled{opacity:.25;cursor:default}
+@media(max-width:400px){.exrow .ex-s{width:48px}.ex-mv{width:18px}}
 .add-row{width:100%;font-size:13px;font-weight:700;color:var(--accent);background:none;
   border:1.5px dashed var(--accent-line);border-radius:var(--r-xs);padding:10px;cursor:pointer;
   transition:background .18s var(--ease)}
@@ -557,6 +562,128 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
 .empty{text-align:center;padding:30px 22px}
 .empty .t{font-size:15px;font-weight:700;margin-bottom:6px}
 .empty .s{font-size:13px;color:var(--text-3);line-height:1.6;max-width:330px;margin:0 auto;font-weight:500}
+
+
+/* ═══════════════════════════════════════════════════════
+   PLAN MODULE
+   ═══════════════════════════════════════════════════════ */
+.plan-today{border-color:var(--accent-line)}
+.pt-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:12px}
+.tag{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:4px 9px;
+  border-radius:999px;background:var(--card-2);border:1px solid var(--line);color:var(--text-3)}
+.tag.warn{color:#F5A524;border-color:rgba(245,165,36,.35);background:rgba(245,165,36,.10)}
+.tag.gate{color:var(--night);border-color:rgba(139,155,255,.35);background:rgba(139,155,255,.10)}
+.pt-sess{font-size:clamp(20px,5vw,26px);font-weight:800;letter-spacing:-.03em}
+.pt-sub{font-size:12.5px;color:var(--text-3);font-weight:600;margin-top:3px}
+.mac{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:16px 0 4px}
+.mac-k{background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-sm);padding:9px 6px;text-align:center}
+.mac-k b{display:block;font-size:15px;font-weight:800;letter-spacing:-.02em}
+.mac-k span{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3)}
+.tl-wrap{margin-top:16px}
+.tl{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-top:1px solid var(--line)}
+.tl-n{font-size:13px;font-weight:600;color:var(--text-2)}
+.tl-v{font-size:14px;font-weight:800;color:var(--accent);font-variant-numeric:tabular-nums}
+.flags{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.flag{border:1px solid rgba(255,96,88,.3);background:rgba(255,96,88,.08);border-radius:var(--r-sm);padding:11px 13px}
+.flag-t{font-size:12.5px;font-weight:800;color:#FF8078}
+.flag-w{font-size:12px;color:var(--text-2);margin-top:4px;line-height:1.5;font-weight:500}
+
+.ovr{margin-bottom:14px}
+.ovr-bands{position:relative;height:34px;border-radius:var(--r-sm);overflow:hidden;background:var(--card-2);
+  border:1px solid var(--line)}
+.ph{position:absolute;top:0;bottom:0;display:grid;place-items:center;border-right:1px solid var(--bg);
+  font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--text-3);overflow:hidden}
+.ph.build{background:rgba(52,226,126,.16)}
+.ph.consolidate{background:rgba(255,255,255,.06)}
+.ph.reveal{background:rgba(139,155,255,.18)}
+.ph.reverse{background:rgba(245,165,36,.15)}
+.ph.hold{background:rgba(255,255,255,.04)}
+.ovr-bands .dl{position:absolute;top:0;bottom:0;width:2px;background:rgba(245,165,36,.75)}
+.ovr-bands .gt{position:absolute;top:0;bottom:0;width:2px;background:var(--night)}
+.ovr-bands .now{position:absolute;top:-2px;bottom:-2px;width:2px;background:#fff;box-shadow:0 0 7px rgba(255,255,255,.85)}
+.ovr-ends{display:flex;justify-content:space-between;font-size:10px;font-weight:700;color:var(--text-3);margin-top:6px}
+.key{display:flex;gap:14px;font-size:10px;font-weight:700;color:var(--text-3);margin-bottom:12px}
+.key i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px;vertical-align:-1px}
+.k-dl{background:rgba(245,165,36,.85)}.k-gt{background:var(--night)}.k-now{background:#fff}
+.ovr-now{font-size:12.5px;color:var(--text-2);font-weight:600}
+.ph-row{padding:13px 20px;border-top:1px solid var(--line)}
+.ph-row:first-child{border-top:none}
+.ph-row.on{background:var(--accent-soft)}
+.ph-r1{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.ph-n{font-size:13.5px;font-weight:800}
+.ph-row.on .ph-n{color:var(--accent)}
+.ph-d{font-size:10.5px;font-weight:700;color:var(--text-3);white-space:nowrap}
+.ph-r2{font-size:11.5px;font-weight:700;color:var(--text-2);margin-top:4px}
+.ph-r3{font-size:11.5px;color:var(--text-3);margin-top:4px;line-height:1.5;font-weight:500}
+
+.cyc-r{display:grid;grid-template-columns:34px 58px 1fr auto;gap:8px;align-items:center;
+  padding:9px 20px;border-top:1px solid var(--line);font-size:12.5px}
+.cyc-r:first-child{border-top:none}
+.cyc-d{font-size:10.5px;font-weight:800;color:var(--text-3);letter-spacing:.05em}
+.cyc-dt{font-size:11px;color:var(--text-3);font-weight:600}
+.cyc-s{font-weight:600;color:var(--text-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cyc-m{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3)}
+.cyc-r.rest .cyc-s{color:var(--text-3)}
+.cyc-r.done .cyc-d,.cyc-r.done .cyc-m{color:var(--accent)}
+.cyc-r.missed .cyc-m{color:#FF8078}
+.cyc-r.now{background:var(--accent-soft)}
+.cyc-r.now .cyc-s{color:var(--text)}
+
+.ck{list-style:none;display:flex;flex-direction:column;gap:2px;margin:0 0 4px}
+.ck-i{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line)}
+.ck-i:first-child{border-top:none}
+.ck-dot{flex:0 0 auto;width:8px;height:8px;border-radius:50%;margin-top:5px;background:var(--line-2)}
+.ck-i.pass .ck-dot{background:var(--accent)}
+.ck-i.fail .ck-dot{background:#FF6058}
+.ck-n{font-size:12.5px;font-weight:700}
+.ck-i.pass .ck-n{color:var(--text)}
+.ck-i.fail .ck-n{color:#FF8078}
+.ck-i.pending .ck-n{color:var(--text-3)}
+.ck-d{font-size:11.5px;color:var(--text-3);margin-top:3px;line-height:1.5;font-weight:500}
+.rec{border:1px solid var(--line);background:var(--card-2);border-radius:var(--r-sm);padding:13px}
+.rec.act{border-color:rgba(245,165,36,.35);background:rgba(245,165,36,.08)}
+.rec-t{font-size:13px;font-weight:800}
+.rec.act .rec-t{color:#F5A524}
+.rec-w{font-size:11.5px;color:var(--text-2);margin-top:5px;line-height:1.5;font-weight:500}
+.rec-n{font-size:10.5px;color:var(--text-3);margin-top:8px;font-weight:600}
+
+.meas{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:420px){.meas{grid-template-columns:1fr 1fr}.meas .field:last-child{grid-column:1/-1}}
+.wchart-wrap{position:relative;margin:14px 0 6px;padding-right:34px}
+.wchart{width:100%;height:110px;display:block}
+.wchart-wrap span{position:absolute;font-size:9.5px;font-weight:800;color:var(--text-3);letter-spacing:.04em}
+.w-hi{right:0;top:0}.w-lo{right:0;bottom:16px}
+.w-d0{left:0;bottom:0}.w-d1{right:34px;bottom:0}
+.wchart-wrap .wchart{margin-bottom:14px}
+.wchart polyline{fill:none;vector-effect:non-scaling-stroke}
+.w-t{stroke:var(--night);stroke-width:1.5;stroke-dasharray:4 4;opacity:.8}
+.w-r{stroke:var(--line-2);stroke-width:1}
+.w-a{stroke:var(--accent);stroke-width:2}
+.wkey{display:flex;gap:14px;font-size:10px;font-weight:700;color:var(--text-3);margin-bottom:6px}
+.wkey i{display:inline-block;width:10px;height:2px;margin-right:5px;vertical-align:3px}
+.w-ka{background:var(--accent)}.w-kt{background:var(--night)}.w-kr{background:var(--line-2)}
+.cyc-ph{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}
+.cph{background:var(--card-2);border:1px dashed var(--line-2);border-radius:var(--r-sm);padding:0;
+  cursor:pointer;overflow:hidden;display:flex;flex-direction:column;transition:border-color .18s var(--ease)}
+.cph:hover{border-color:var(--accent-line)}
+.cph-i{display:grid;place-items:center;aspect-ratio:3/4;color:var(--text-3);font-size:20px;font-weight:300;overflow:hidden}
+.cph-i img{width:100%;height:100%;object-fit:cover;display:block}
+.cph-l{font-size:9.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--text-3);
+  padding:6px 0;border-top:1px solid var(--line)}
+
+.lg{border-top:1px solid var(--line);padding:13px 0}
+.lg:first-of-type{border-top:none;padding-top:0}
+.lg-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.lg-n{font-size:13.5px;font-weight:700}
+.lg-p{font-size:11px;font-weight:700;color:var(--text-3);white-space:nowrap}
+.lg-sug{font-size:11.5px;color:var(--text-3);margin-top:4px;line-height:1.5;font-weight:500}
+.lg-sug b{color:var(--accent);font-size:13px}
+.lg-sug.dl b{color:#F5A524}
+.lg-sets{display:flex;flex-wrap:wrap;gap:8px;margin-top:9px}
+.lg-set{display:flex;align-items:center;gap:5px}
+.lg-i{font-size:10px;font-weight:800;color:var(--text-3);width:10px}
+.lg-x{font-size:11px;color:var(--text-3)}
+.lg-in{width:56px;padding:8px 6px;text-align:center;font-size:13px;font-weight:700}
 
 /* ═══════════════════════════════════════════════════════
    NAV
@@ -768,6 +895,7 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
 <div class="toast" id="toast"></div>
 <input type="file" accept="image/*" id="photoInput1" hidden>
 <input type="file" accept="image/*" id="photoInput2" hidden>
+<input type="file" accept="image/*" id="photoInputC" hidden>
 
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
@@ -896,15 +1024,21 @@ const DEFAULT_PLAN={0:{session:"rest",abs:false},1:{session:"chestback",abs:true
 /* Shift rotation: 4 days on · 4 off · 4 nights · 4 off = a 16-day cycle,
    which reads as two 8-day weeks (a days week and a nights week). */
 const CYCLE=16;
+/* The rotation runs 4 off from 9 Sept 2026, so the first block of day shifts
+   starts on the 13th. Everything else is counted from there. */
+const ROTA_ANCHOR="2026-09-13";
+/* Eight gym sessions a cycle, all on shift days, in descending order of
+   demand: the heaviest compound work lands on the freshest day and the
+   isolation work on the fourth, when you are deepest into the block. */
 const DEFAULT_ROTATION={
-  0:{session:"rest",abs:false},        1:{session:"chestback",abs:false},
-  2:{session:"rest",abs:false},        3:{session:"shoulderarms",abs:false},
-  4:{session:"upperA",abs:true},       5:{session:"chestback",abs:false},
-  6:{session:"upperB",abs:true},       7:{session:"rest",abs:false},
-  8:{session:"rest",abs:false},        9:{session:"rest",abs:false},
-  10:{session:"rest",abs:false},       11:{session:"rest",abs:false},
-  12:{session:"upperA",abs:true},      13:{session:"shoulderarms",abs:true},
-  14:{session:"chestback",abs:false},  15:{session:"rest",abs:false},
+  0:{session:"upperA",abs:true},        1:{session:"chestback",abs:false},   // day shifts
+  2:{session:"upperB",abs:true},        3:{session:"shoulderarms",abs:false},
+  4:{session:"rest",abs:false},         5:{session:"rest",abs:false},        // off
+  6:{session:"rest",abs:true},          7:{session:"rest",abs:true},
+  8:{session:"upperA",abs:true},        9:{session:"chestback",abs:false},   // night shifts
+  10:{session:"upperB",abs:true},       11:{session:"shoulderarms",abs:false},
+  12:{session:"rest",abs:false},        13:{session:"rest",abs:false},       // off
+  14:{session:"rest",abs:true},         15:{session:"rest",abs:false},
 };
 /* position → what that day actually is */
 function shiftAt(pos){
@@ -924,10 +1058,11 @@ let TOTAL=Math.max(1,Math.round((TARGET-START)/864e5));
 
 let viewDate=new Date(realToday), viewKey=realKey;
 let dayState=blankDay();
+let dayLog={slot:null,ex:{}};
 let weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));
 let rotationPlan=JSON.parse(JSON.stringify(DEFAULT_ROTATION));
-let scheduleMode="week";              // "week" | "rotation"
-let rotationStart=parseISO(DEF_START); // date a block of DAY shifts began
+let scheduleMode="rotation";          // "week" | "rotation"
+let rotationStart=parseISO(ROTA_ANCHOR); // date a block of DAY shifts began
 let customSessions=[...DEFAULT_SESSIONS];
 let customAbs=[...DEFAULT_ABS];
 let photoCache={}, day1PhotoLabel="Before";
@@ -1038,6 +1173,453 @@ function stats(){
 }
 
 /* ═══════════════════════════════════════════════════════
+   THE PLAN — one declarative definition of the 351 days.
+   Edit the dates, phases, blocks and gates here; nothing
+   downstream hard-codes any of them.
+   ═══════════════════════════════════════════════════════ */
+const PLAN={
+  start:"2026-09-09", target:"2027-05-09", end:"2027-08-25",
+  /* the four session slots, in the order they run through a shift block */
+  slots:[
+    {key:"upperA",       name:"Upper 1",          note:"Heaviest compound work, on your freshest day"},
+    {key:"chestback",    name:"Chest and back",   note:"One heavy press, then back volume"},
+    {key:"upperB",       name:"Upper 2",          note:"Second pressing day, lighter than Upper 1"},
+    {key:"shoulderarms", name:"Shoulders and arms",note:"Isolation only — the session doing the visual work"},
+  ],
+  /* nutrition. Phase 4a steps its calories weekly, so it carries steps[] */
+  phases:[
+    {id:"build", name:"Build", short:"Phase 1", from:"2026-09-09", to:"2027-01-10",
+     kcal:2900, protein:165, fat:85, carbs:380, rate:0.23, cycleRate:0.5,
+     note:"A lean gain, not a bulk. Slow on purpose so most of what you add is tissue."},
+    {id:"consolidate", name:"Consolidate", short:"Phase 2", from:"2027-01-11", to:"2027-02-21",
+     kcal:2750, protein:170, fat:80, carbs:345, rate:0, cycleRate:0,
+     note:"Six weeks at maintenance. Appetite settles and fat gain stops before the cut."},
+    {id:"reveal", name:"Reveal", short:"Phase 3", from:"2027-02-22", to:"2027-05-09",
+     kcal:2300, protein:180, fat:70, carbs:235, rate:-0.45, cycleRate:-1.0,
+     note:"Protein up as calories come down — that is what protects the muscle. Fat floor is 70g."},
+    {id:"reverse", name:"Reverse", short:"Phase 4a", from:"2027-05-10", to:"2027-06-06",
+     steps:[2400,2500,2600,2700], protein:180, rate:0, cycleRate:0,
+     note:"Add 100 kcal of carbs a week. If the average gains more than 0.4kg, hold a week instead."},
+    {id:"hold", name:"Hold", short:"Phase 4b", from:"2027-06-07", to:"2027-08-25",
+     kcal:2700, protein:165, fat:80, carbs:350, rate:0, cycleRate:0, band:1,
+     note:"Flat inside a 1kg band. Act only when you leave it — most people ruin this phase reacting to noise."},
+  ],
+  /* a deload cycle is the 16 days starting on each of these */
+  deloads:["2026-10-07","2026-11-24","2027-01-11","2027-02-28","2027-04-17","2027-06-04","2027-07-22"],
+  /* training blocks run deload to deload */
+  blocks:[
+    {id:"foundation", name:"Foundation", from:"2026-09-09", to:"2026-10-06", sets:2, rir:"4–5",
+     target:"Finish it uninjured and not sore for days. Weight near flat. Do not judge this block on strength."},
+    {id:"b1", name:"Block 1", from:"2026-10-07", to:"2026-11-23", sets:3, rir:"1–2",
+     target:"Every lift up at least six times. Weight about +2.5kg. Waist up no more than 1cm."},
+    {id:"b2", name:"Block 2", from:"2026-11-24", to:"2027-01-10", sets:3, rir:"1–2",
+     target:"Another +2.5kg, waist +1cm at most. Around 76kg by 10 January, main lifts near double September."},
+    {id:"b3", name:"Block 3", from:"2027-01-11", to:"2027-02-27", sets:3, rir:"1–2",
+     target:"Weight flat, strength still climbing on the lifts that have not stalled."},
+    {id:"b4", name:"Block 4", from:"2027-02-28", to:"2027-04-16", sets:3, rir:"1–2",
+     target:"Weight down about 4kg, waist down 3–4cm. Strength holding — losing over 10% on a lift is a warning."},
+    {id:"b5", name:"Block 5", from:"2027-04-17", to:"2027-06-03", sets:3, rir:"1–2",
+     target:"By 9 May around 71kg, waist 4–6cm below its January peak."},
+    {id:"b6", name:"Block 6", from:"2027-06-04", to:"2027-07-21", sets:3, rir:"1–2",
+     target:"Weight inside a 1kg band. Nothing else needs to happen."},
+    {id:"b7", name:"Block 7", from:"2027-07-22", to:"2027-08-25", sets:3, rir:"1–2",
+     target:"Weight inside a 1kg band. Nothing else needs to happen."},
+  ],
+  /* the four dates where you check the whole picture, not the trend */
+  gates:[
+    {on:"2027-01-10", name:"Phase 1 gate", weight:76, waistMax:2,
+     note:"Around 76kg, waist up no more than 2cm from September, all four slots progressing. Waist up more than 3cm means start the cut two weeks early."},
+    {on:"2027-02-21", name:"Phase 2 gate", drift:0.5,
+     note:"Weight within 0.5kg of 10 January. Drifted up means Phase 2 was a surplus, not maintenance."},
+    {on:"2027-05-09", name:"Target date", weight:71, waistMax:0,
+     note:"Around 71kg, waist at or below September's, and visibly different in the photos."},
+    {on:"2027-08-25", name:"Hold gate", weight:71, waistMax:2,
+     note:"Same weight and waist as 9 May, within 1kg and 2cm."},
+  ],
+  /* progression, applied to the last logged performance of a lift */
+  prog:{barbell:2.5, other:2, missDrop:0.10, stallSwitch:3},
+};
+
+const PLAN_START=parseISO(PLAN.start), PLAN_END=parseISO(PLAN.end);
+const inRange=(d,a,b)=>midnight(d)>=parseISO(a)&&midnight(d)<=parseISO(b);
+/* whole days between two dates, both ends counted */
+const spanDays=(a,b)=>Math.round((parseISO(b)-parseISO(a))/864e5)+1;
+
+function phaseAt(d){return PLAN.phases.find(p=>inRange(d,p.from,p.to))||null}
+function blockAt(d){return PLAN.blocks.find(b=>inRange(d,b.from,b.to))||null}
+function gateAt(d){return PLAN.gates.find(g=>dkey(midnight(d))===g.on)||null}
+/* a deload runs for one full 16-day cycle from its start date */
+function deloadAt(d){
+  const t=midnight(d);
+  for(const s of PLAN.deloads){
+    const a=parseISO(s), b=addDays(a,CYCLE-1);
+    if(t>=a&&t<=b)return{from:s,to:dkey(b),dayN:Math.round((t-a)/864e5)+1};
+  }
+  return null;
+}
+/* macros for a date — the reverse phase steps up a week at a time */
+function macrosAt(d,ph){
+  const p=ph||phaseAt(d); if(!p)return null;
+  if(!p.steps)return{kcal:p.kcal,protein:p.protein,fat:p.fat,carbs:p.carbs};
+  const wk=Math.min(p.steps.length-1,Math.floor((midnight(d)-parseISO(p.from))/864e5/7));
+  const kcal=p.steps[wk];
+  // carbs absorb the weekly step; fat held at the Phase 3 floor
+  const fat=70, carbs=Math.round((kcal-p.protein*4-fat*9)/4);
+  return{kcal,protein:p.protein,fat,carbs,week:wk+1,of:p.steps.length};
+}
+/* everything the app needs to know about one date, in one call */
+function planAt(d){
+  const t=midnight(d), phase=phaseAt(d), block=blockAt(d), deload=deloadAt(d);
+  const pos=cyclePos(t), shift=shiftAt(pos), slot=SLOT_AT[pos]||null;
+  return{
+    date:dkey(t),
+    dayN:Math.round((t-PLAN_START)/864e5)+1,
+    total:spanDays(PLAN.start,PLAN.end),
+    toTarget:Math.round((parseISO(PLAN.target)-t)/864e5),
+    phase, block, deload, gate:gateAt(t),
+    macros:macrosAt(t,phase),
+    cyclePos:pos, cycleDay:pos+1, shift,
+    slot,                                   // null on off days
+    sets:deload?2:(block?block.sets:3),
+    cap:deload?0.85:1,
+    rir:block?block.rir:"1–2",
+  };
+}
+/* cycle position → session slot. Both shift blocks run the same four. */
+const SLOT_AT={0:"upperA",1:"chestback",2:"upperB",3:"shoulderarms",
+               8:"upperA",9:"chestback",10:"upperB",11:"shoulderarms"};
+const slotName=k=>(PLAN.slots.find(s=>s.key===k)||{}).name||"Rest";
+/* the 16 days of the cycle containing d, as dates */
+function cycleOf(d){
+  const first=addDays(midnight(d),-cyclePos(d));
+  return Array.from({length:CYCLE},(_,i)=>addDays(first,i));
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   LOGS, MEASUREMENTS AND PROGRESSION
+   Set logs and measurements live in the synced document,
+   one key per day, so a day's edit only rewrites that day.
+   ═══════════════════════════════════════════════════════ */
+const logKey=k=>"log:"+k, bwKey=k=>"bw:"+k, waistKey=k=>"waist:"+k, sleepKey=k=>"sleep:"+k;
+const cacheGet=k=>(_cache?_cache[k]:null)??null;
+function logFor(k){return cacheGet(logKey(k))||{ex:{}}}
+function allLogs(){
+  if(!_cache)return[];
+  return Object.keys(_cache).filter(k=>k.startsWith("log:"))
+    .map(k=>({date:k.slice(4),log:_cache[k]})).sort((a,b)=>a.date<b.date?-1:1);
+}
+/* every day that carries a number, oldest first */
+function series(prefix){
+  if(!_cache)return[];
+  return Object.keys(_cache).filter(k=>k.startsWith(prefix))
+    .map(k=>({date:k.slice(prefix.length),v:Number(_cache[k])}))
+    .filter(x=>isFinite(x.v)&&x.v>0).sort((a,b)=>a.date<b.date?-1:1);
+}
+/* seven-day rolling average ending on d — the only number worth judging */
+function rollingAvg(prefix,d,win){
+  const end=midnight(d), from=addDays(end,-((win||7)-1));
+  const vals=series(prefix).filter(x=>{const t=parseISO(x.date);return t>=from&&t<=end}).map(x=>x.v);
+  return vals.length?{avg:vals.reduce((a,b)=>a+b,0)/vals.length,n:vals.length}:null;
+}
+const avgOn=(d,win)=>rollingAvg("bw:",d,win);
+function lastWaist(before){
+  const s=series("waist:").filter(x=>!before||x.date<=dkey(midnight(before)));
+  return s.length?s[s.length-1]:null;
+}
+const septWaist=()=>{const s=series("waist:");return s.length?s[0]:null};
+
+/* ── progression ──────────────────────────────────────
+   Reads the last logged performance of a lift and applies the
+   plan's rules. Always a suggestion — never applied for you. */
+const repFloor=r=>{const m=String(r||"").match(/\d+/);return m?+m[0]:8};
+const isBarbell=n=>/barbell|bench|t-?bar|\bbar\b|deadlift|squat/i.test(n||"");
+const incFor=ex=>isBarbell(ex.name)?PLAN.prog.barbell:PLAN.prog.other;
+const roundTo=(v,step)=>Math.max(step,Math.round(v/step)*step);
+/* every logged performance of one exercise, oldest first */
+function exHistory(exId,before){
+  return allLogs().filter(x=>x.log&&x.log.ex&&Array.isArray(x.log.ex[exId])&&x.log.ex[exId].length)
+    .filter(x=>!before||x.date<dkey(midnight(before)))
+    .map(x=>{
+      const sets=x.log.ex[exId].filter(s=>s&&isFinite(+s.w)&&isFinite(+s.r)&&+s.r>0);
+      const load=sets.length?Math.min(...sets.map(s=>+s.w)):0;
+      return{date:x.date,sets,load,shift:shiftAt(cyclePos(parseISO(x.date))).type};
+    }).filter(x=>x.sets.length);
+}
+/* did that session complete everything it was asked for */
+function sessionMade(h,ex,need){
+  const floor=repFloor(ex.reps);
+  return h.sets.length>=need&&h.sets.every(s=>+s.r>=floor);
+}
+function targetFor(ex,d){
+  const p=planAt(d), need=p.sets, inc=incFor(ex), step=isBarbell(ex.name)?2.5:1;
+  const h=exHistory(ex.id,d);
+  if(!h.length)return{load:null,why:"First time. Pick a weight you could stop with 4–5 reps left."};
+  const last=h[h.length-1];
+  const made=sessionMade(last,ex,need);
+  let load,why;
+  if(made){
+    load=last.load+inc;
+    why=`Made ${last.load}kg on ${shortD(parseISO(last.date))}. Add ${inc}kg.`;
+  }else{
+    // how many sessions in a row have missed at this weight
+    let f=0;
+    for(let i=h.length-1;i>=0;i--){if(sessionMade(h[i],ex,need))break;f++}
+    if(f>=PLAN.prog.stallSwitch){
+      load=last.load;
+      why=`Stalled ${f} times. Switch to double progression — hold ${last.load}kg and add reps until every set hits the top of the range.`;
+    }else if(f>=2){
+      load=roundTo(last.load*(1-PLAN.prog.missDrop),step);
+      why=`Missed twice at ${last.load}kg. Drop 10% and build back up.`;
+    }else{
+      load=last.load;
+      why=`Missed ${last.load}kg on ${shortD(parseISO(last.date))}. Run the same weight again.`;
+    }
+  }
+  if(p.deload)return{load:roundTo(load*p.cap,step),full:load,deload:true,
+    why:why+` Deload cycle — capped at ${Math.round(p.cap*100)}% of ${load}kg.`};
+  return{load,why};
+}
+/* has any lift anywhere gone up between two dates */
+function anyLiftUp(fromKey,toKey){
+  const seen={};
+  for(const {date,log} of allLogs()){
+    if(date<fromKey||date>toKey)continue;
+    for(const id in (log.ex||{})){
+      const sets=(log.ex[id]||[]).filter(s=>isFinite(+s.w));
+      if(!sets.length)continue;
+      const load=Math.min(...sets.map(s=>+s.w)), reps=sets.reduce((a,s)=>a+(+s.r||0),0);
+      const prev=priorBest(id,date);
+      if(prev&&(load>prev.load||(load===prev.load&&reps>prev.reps)))return true;
+      seen[id]=1;
+    }
+  }
+  return false;
+}
+function priorBest(exId,beforeKey){
+  const h=allLogs().filter(x=>x.date<beforeKey&&x.log.ex&&x.log.ex[exId]);
+  if(!h.length)return null;
+  const last=h[h.length-1], sets=(last.log.ex[exId]||[]).filter(s=>isFinite(+s.w));
+  if(!sets.length)return null;
+  return{load:Math.min(...sets.map(s=>+s.w)),reps:sets.reduce((a,s)=>a+(+s.r||0),0)};
+}
+/* which slots got trained inside a date range */
+function slotsTrained(fromKey,toKey){
+  const out=new Set();
+  for(const {date,log} of allLogs()){
+    if(date<fromKey||date>toKey)continue;
+    if(log.slot&&Object.keys(log.ex||{}).length)out.add(log.slot);
+  }
+  return out;
+}
+/* did a slot's load go up inside a range */
+function slotProgressed(slot,fromKey,toKey){
+  for(const {date,log} of allLogs()){
+    if(date<fromKey||date>toKey||log.slot!==slot)continue;
+    for(const id in (log.ex||{})){
+      const sets=(log.ex[id]||[]).filter(s=>isFinite(+s.w));
+      if(!sets.length)continue;
+      const prev=priorBest(id,date);
+      if(prev&&Math.min(...sets.map(s=>+s.w))>prev.load)return true;
+    }
+  }
+  return false;
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   CHECKPOINTS, RED FLAGS AND RECALCULATION
+   Every check reports pass / fail / pending and, when it
+   fails, the number that caused it.
+   ═══════════════════════════════════════════════════════ */
+const PASS="pass", FAIL="fail", WAIT="pending";
+const chk=(name,state,detail)=>({name,state,detail});
+const kg=v=>(v>0?"+":"")+v.toFixed(1)+"kg";
+
+/* ── weekly, over the seven days ending on d ── */
+function weeklyChecks(d){
+  const p=planAt(d), out=[];
+  const now=avgOn(d), then=avgOn(addDays(d,-7));
+  if(!now||!then||now.n<4||then.n<4){
+    out.push(chk("Bodyweight moving at the phase rate",WAIT,
+      "Needs seven days of weights this week and last — you have "+((now&&now.n)||0)+" and "+((then&&then.n)||0)+"."));
+  }else{
+    const moved=now.avg-then.avg, want=p.phase?p.phase.rate:0;
+    const ok=want>0?moved>=want*0.5:want<0?moved<=want*0.5:Math.abs(moved)<=0.35;
+    out.push(chk("Bodyweight moving at the phase rate",ok?PASS:FAIL,
+      `Seven-day average ${now.avg.toFixed(1)}kg, ${kg(moved)} on last week. Target ${want===0?"flat":kg(want)+"/week"}.`));
+  }
+  // every scheduled session in the last 7 days completed
+  const due=[],missed=[];
+  for(let i=6;i>=1;i--){const dd=addDays(d,-i), a=planAt(dd);
+    // today is still in progress, so it is never counted as missed
+    if(!a.slot||dkey(dd)>=dkey(realToday))continue;
+    due.push(dkey(dd));
+    if(!Object.keys((logFor(dkey(dd)).ex)||{}).length)missed.push(dkey(dd));}
+  out.push(chk("Every scheduled session done",due.length?(missed.length?FAIL:PASS):WAIT,
+    due.length?(missed.length?`Missed ${missed.length} of ${due.length}: ${missed.map(k=>slotName(planAt(parseISO(k)).slot)).join(", ")}.`
+      :`All ${due.length} logged.`):"No sessions fell in these seven days."));
+  // at least one lift up
+  const up=anyLiftUp(dkey(addDays(d,-6)),dkey(d));
+  out.push(chk("At least one lift went up",up?PASS:(due.length?FAIL:WAIT),
+    up?"Load or reps improved somewhere.":"Nothing beat its previous session."));
+  // sleep, compared to the same block type only
+  out.push(sleepCheck(d,p));
+  return out;
+}
+/* night blocks are only ever compared to night blocks */
+function sleepCheck(d,p){
+  const type=p.shift.type, name={day:"day shifts",night:"night shifts",off:"off days"}[type];
+  const all=series("sleep:").map(x=>({...x,t:shiftAt(cyclePos(parseISO(x.date))).type}));
+  const mine=all.filter(x=>x.t===type);
+  const recent=mine.filter(x=>parseISO(x.date)>=addDays(d,-6)&&parseISO(x.date)<=midnight(d));
+  const base=mine.filter(x=>parseISO(x.date)<addDays(d,-6));
+  if(recent.length<2||base.length<4)
+    return chk("Sleep at your baseline for this block",WAIT,
+      `Needs a few more nights logged on ${name} to have a baseline. ${base.length} so far.`);
+  const r=recent.reduce((a,b)=>a+b.v,0)/recent.length, b=base.reduce((a,x)=>a+x.v,0)/base.length;
+  return chk("Sleep at your baseline for this block",r>=b-0.5?PASS:FAIL,
+    `${r.toFixed(1)}h this week on ${name}, against a ${b.toFixed(1)}h baseline.`);
+}
+
+/* ── per cycle, prompted on day 1 ── */
+function cycleChecks(d){
+  const days=cycleOf(d), from=dkey(days[0]), to=dkey(days[15]);
+  const prev=cycleOf(addDays(days[0],-1)), pFrom=dkey(prev[0]), pTo=dkey(prev[15]);
+  const p=planAt(days[0]), out=[];
+  const shots=["front","side","back"].filter(k=>cyclePhotoKeys.has(photoCycKey(from,k)));
+  out.push(chk("Photos taken — front, side, back",shots.length===3?PASS:(shots.length?FAIL:WAIT),
+    shots.length?`${shots.length} of 3 saved (${shots.join(", ")}).`:"None yet this cycle. Same spot, same light, before eating."));
+  const capped=dkey(midnight(days[15])<midnight(realToday)?days[15]:realToday);
+  const w=series("waist:").find(x=>x.date>=from&&x.date<=capped);
+  out.push(chk("Waist measured at the navel",w?PASS:WAIT,
+    w?`${w.v}cm on ${shortD(parseISO(w.date))}.`:"Not measured this cycle. Relaxed, not sucked in."));
+  // mid-cycle, compare against today rather than a date that has not happened
+  const endD=midnight(days[15])<midnight(realToday)?days[15]:realToday;
+  const part=midnight(endD)<midnight(days[15]);
+  const a=avgOn(endD), b=avgOn(prev[15]);
+  if(!a||!b)out.push(chk("Bodyweight on target for the cycle",WAIT,"Needs a rolling average at both ends of the cycle."));
+  else{
+    const gone=Math.max(1,Math.round((midnight(endD)-midnight(days[0]))/864e5)+1);
+    const moved=a.avg-b.avg, full=p.phase?p.phase.cycleRate:0;
+    const want=part?full*(gone/CYCLE):full;
+    const ok=want>0?moved>=want*0.5:want<0?moved<=want*0.5:Math.abs(moved)<=0.7;
+    out.push(chk("Bodyweight on target for the cycle",part?WAIT:(ok?PASS:FAIL),
+      `${kg(moved)} in ${gone} of 16 days. ${part?`On pace for ${kg(full===0?0:moved/gone*CYCLE)}`:"Target"} ${full===0?"— flat is the target":"against "+kg(full)}.`));
+  }
+  const missing=PLAN.slots.filter(s=>!slotProgressed(s.key,pFrom,capped));
+  out.push(chk("Load added in all four slots",missing.length?FAIL:PASS,
+    missing.length?`No load added in: ${missing.map(s=>s.name).join(", ")}.`:"All four moved."));
+  return out;
+}
+
+/* ── per block ── */
+function blockChecks(d){
+  const b=planAt(d).block; if(!b)return[];
+  const from=b.from, to=dkey(midnight(d)<parseISO(b.to)?midnight(d):parseISO(b.to));
+  const a=avgOn(parseISO(to)), s=avgOn(parseISO(from),7);
+  const w0=series("waist:").find(x=>x.date>=from), w1=[...series("waist:")].reverse().find(x=>x.date<=to);
+  const out=[chk(b.name+" — the target",WAIT,b.target)];
+  if(a&&s)out.push(chk("Bodyweight across the block",WAIT,
+    `${s.avg.toFixed(1)}kg → ${a.avg.toFixed(1)}kg (${kg(a.avg-s.avg)}) so far.`));
+  if(w0&&w1&&w0.date!==w1.date)out.push(chk("Waist across the block",WAIT,
+    `${w0.v}cm → ${w1.v}cm (${(w1.v-w0.v>0?"+":"")+(w1.v-w0.v).toFixed(1)}cm).`));
+  return out;
+}
+
+/* ── the four phase gates ── */
+function gateChecks(){
+  return PLAN.gates.map(g=>{
+    const on=parseISO(g.on), passed=midnight(realToday)>=on;
+    if(!passed)return chk(g.name+" · "+shortD(on),WAIT,g.note);
+    const a=avgOn(on), w=lastWaist(on), sept=septWaist();
+    if(!a)return chk(g.name+" · "+shortD(on),WAIT,"No weights logged around that date. "+g.note);
+    const bits=[`${a.avg.toFixed(1)}kg`];
+    let ok=true;
+    if(g.weight!=null){ok=Math.abs(a.avg-g.weight)<=1.5;bits.push(`target ${g.weight}kg`)}
+    if(g.waistMax!=null&&w&&sept){
+      const dw=w.v-sept.v; bits.push(`waist ${dw>0?"+":""}${dw.toFixed(1)}cm on September`);
+      if(dw>g.waistMax)ok=false;
+    }
+    if(g.drift!=null){
+      const ref=avgOn(parseISO("2027-01-10"));
+      if(ref){const dd=Math.abs(a.avg-ref.avg);bits.push(`${dd.toFixed(1)}kg from 10 January`);if(dd>g.drift)ok=false}
+    }
+    return chk(g.name+" · "+shortD(on),ok?PASS:FAIL,bits.join(" · ")+". "+g.note);
+  });
+}
+
+/* ── red flags: act now, do not wait for the next checkpoint ── */
+function redFlags(d){
+  const p=planAt(d), out=[];
+  const push=(t,w)=>out.push({title:t,what:w});
+  const now=avgOn(d), wk=avgOn(addDays(d,-7)), mo=avgOn(addDays(d,-28));
+  if(p.phase&&p.phase.id==="build"){
+    if(now&&mo){
+      const gained=now.avg-mo.avg;
+      const w1=lastWaist(d), w0=series("waist:").find(x=>parseISO(x.date)>=addDays(d,-28));
+      if(w0&&w1&&gained>0.3&&(w1.v-w0.v)/(gained/2)>1)
+        push("Waist growing faster than the weight",
+          `Waist +${(w1.v-w0.v).toFixed(1)}cm for ${gained.toFixed(1)}kg gained. That is fat, not muscle — drop 200 kcal.`);
+      if(gained<-0.3)
+        push("Weight dropping during the build",
+          `Down ${Math.abs(gained).toFixed(1)}kg over four weeks in a surplus. Almost always a tracking problem, not your metabolism.`);
+    }
+  }
+  if(p.phase&&p.phase.id==="reveal"&&now&&wk&&(wk.avg-now.avg)>0.7)
+    push("Losing too fast",
+      `Down ${(wk.avg-now.avg).toFixed(1)}kg this week against a 0.45kg target. Add 200 kcal — this pace costs muscle.`);
+  // no load added anywhere for two consecutive cycles
+  const c=cycleOf(d), prev=cycleOf(addDays(c[0],-1));
+  if(!anyLiftUp(dkey(prev[0]),dkey(d))&&allLogs().some(x=>x.date>=dkey(prev[0])))
+    push("Nothing has gone up for two cycles",
+      "Check food first, then sleep, then whether the deload is overdue — in that order.");
+  // the day-4 slot skipped three cycles running
+  let skipped=0;
+  for(let i=0;i<3;i++){
+    const cc=cycleOf(addDays(c[0],-i*CYCLE));
+    if(dkey(cc[15])>dkey(realToday))continue;
+    if(!slotsTrained(dkey(cc[0]),dkey(cc[15])).has("shoulderarms"))skipped++;
+  }
+  if(skipped>=3)push("Shoulders and arms skipped three cycles running",
+    "That is the session doing your visual work. Move it earlier in the block rather than losing it again.");
+  return out;
+}
+
+/* ── macro recalculation, every four weeks, never applied for you ── */
+function recalc(d){
+  const p=planAt(d).phase; if(!p)return null;
+  const now=avgOn(d), then=avgOn(addDays(d,-28));
+  if(!now||!then||now.n<4)return{state:WAIT,text:"Needs four weeks of daily weights before this can say anything."};
+  const moved=now.avg-then.avg, m=macrosAt(d,p);
+  const say=(t,why)=>({state:"act",text:t,why,moved});
+  if(p.id==="build"){
+    if(moved<0.8)return say(`Add 150 kcal as carbs — about ${Math.round(m.carbs+37)}g.`,
+      `Gained ${moved.toFixed(1)}kg in four weeks against a 0.9kg target.`);
+    if(moved>1.5)return say(`Take 150 kcal off the carbs — about ${Math.round(m.carbs-37)}g.`,
+      `Gained ${moved.toFixed(1)}kg in four weeks. Faster than 1.5kg is mostly fat.`);
+  }
+  if(p.id==="consolidate"&&Math.abs(moved)>0.5)
+    return say(`${moved>0?"Take 150 kcal off":"Add 150 kcal"} to flatten it.`,
+      `Moved ${kg(moved)} in four weeks. This phase is meant to be flat.`);
+  if(p.id==="reveal"){
+    if(moved>-1.4){
+      if(m.kcal-150<2000)return say("Add a rest day rather than cutting food further.",
+        `Only ${Math.abs(moved).toFixed(1)}kg down, and 150 kcal off would take you under the 2,000 floor.`);
+      return say(`Take 150 kcal off the carbs — about ${Math.round(m.carbs-37)}g.`,
+        `Down ${Math.abs(moved).toFixed(1)}kg in four weeks against a 1.8kg target.`);
+    }
+  }
+  if(p.id==="hold"&&p.band){
+    const band=series("bw:").length?avgOn(d).avg:null;
+    const last=avgOn(addDays(d,-7));
+    if(band&&last&&Math.abs(band-last)>p.band)
+      return say(`${band>last?"Drop":"Add"} 150 kcal.`,`Outside the ${p.band}kg band two weeks running.`);
+  }
+  return{state:PASS,text:"Nothing to change.",why:`Moved ${kg(moved)} over four weeks, which is where the phase wants you.`,moved};
+}
+
+/* ═══════════════════════════════════════════════════════
    RENDER
    ═══════════════════════════════════════════════════════ */
 const el=id=>document.getElementById(id);
@@ -1121,6 +1703,8 @@ function viewSummary(){
 
   ${dateNavHtml()}
 
+  ${todayPlanCard()}
+
   <div class="grid2">
     <section class="card">
       <div class="card-head"><h2>On today</h2>
@@ -1187,7 +1771,13 @@ function viewFitness(){
          <div class="pills">${customSessions.map(s=>`<button class="pill${sess&&sess.id===s.id?" on":""}" data-sess="${s.id}">${esc(s.name)}</button>`).join("")}</div>
          <div class="hint">${dayState.session?"Switched manually — tap any to change":"From your "+(onRotation()?"rotation":"weekly plan")}</div>
        </div>
-       ${sess?`<div class="card-body flush" style="border-top:1px solid var(--line)">${sess.items.map(exTask).join("")}</div>`:""}`;
+       ${sess?`<div class="card-body flush" style="border-top:1px solid var(--line)">${sess.items.map(exTask).join("")}</div>
+         <div class="card-body" style="border-top:1px solid var(--line)">
+           <div class="mini-lab" style="margin-top:0">Log your sets</div>
+           <div class="hint" style="margin:0 0 12px">Target loads come from your last session and the plan's
+             progression rules. They are suggestions — put in what you actually lifted.</div>
+           ${sess.items.map(logRow).join("")}
+         </div>`:""}`;
 
   const absInner = absShown
     ? `<div class="card-body flush">${customAbs.map(exTask).join("")}</div>
@@ -1755,6 +2345,8 @@ function viewProgress(){
     <div class="stat"><div class="k">Consistency</div><div class="v">${s.rate}<small>%</small></div></div>
   </section>
 
+  ${measureCard()}
+
   <section class="card">
     <div class="card-head"><h2>The ${TOTAL}</h2><span class="card-meta">${s.elapsed} elapsed</span></div>
     <div class="card-body">
@@ -1833,6 +2425,7 @@ function planRow(idx,label,tint,isNow,plan){
 }
 function viewPlan(){
   const rot=onRotation();
+  const planTop=planOverview()+(rot?cycleView():"")+checkpointView();
   let rows,scheduleTitle,scheduleMeta;
 
   if(rot){
@@ -1864,6 +2457,8 @@ function viewPlan(){
     : `<div class="empty"><div class="t">No sessions yet</div><div class="s">Create your training sessions in Settings — they'll appear here and in the weekly schedule.</div></div>`;
 
   return `
+  ${planTop}
+
   <section class="card">
     <div class="card-head"><h2>${scheduleTitle}</h2><span class="card-meta">${scheduleMeta}</span></div>
     <div class="card-body flush">${rows}</div>
@@ -1971,6 +2566,8 @@ function sessionEditor(){
       <input class="input ex-n ed-name" data-ei="${i}" value="${esc(x.name)}" placeholder="Exercise">
       <input class="input ex-s ed-sets" data-ei="${i}" value="${esc(x.sets)}" placeholder="Sets">
       <input class="input ex-s ed-reps" data-ei="${i}" value="${esc(x.reps)}" placeholder="Reps">
+      <button class="ex-mv ed-up" data-ei="${i}" aria-label="Move up"${i===0?" disabled":""}>↑</button>
+      <button class="ex-mv ed-dn" data-ei="${i}" aria-label="Move down"${i===editingSession.items.length-1?" disabled":""}>↓</button>
       <button class="ex-del ed-del" data-ei="${i}" aria-label="Remove">×</button>
     </div>`).join("");
   return `<div class="editor">
@@ -1986,10 +2583,259 @@ function sessionEditor(){
   </div>`;
 }
 
+
+/* ═══════════════════════════════════════════════════════
+   PLAN UI
+   ═══════════════════════════════════════════════════════ */
+function photoCycKey(cycleStart,which){return "cyc:"+cycleStart+":"+which}
+let cyclePhotoKeys=new Set();
+
+const stateDot=s=>`<span class="ck-dot ${s}"></span>`;
+function checkList(items){
+  if(!items.length)return "";
+  return `<ul class="ck">${items.map(c=>`<li class="ck-i ${c.state}">
+    ${stateDot(c.state)}<div><div class="ck-n">${esc(c.name)}</div>
+    <div class="ck-d">${esc(c.detail)}</div></div></li>`).join("")}</ul>`;
+}
+function macroLine(m){
+  if(!m)return "";
+  return `<div class="mac">
+    <div class="mac-k"><b>${m.kcal.toLocaleString()}</b><span>kcal</span></div>
+    <div class="mac-k"><b>${m.protein}g</b><span>protein</span></div>
+    <div class="mac-k"><b>${m.fat}g</b><span>fat</span></div>
+    <div class="mac-k"><b>${m.carbs}g</b><span>carbs</span></div>
+  </div>`;
+}
+
+/* ── the today card, the thing you look at most ── */
+function todayPlanCard(){
+  const d=viewDate, p=planAt(d);
+  if(p.dayN<1||p.dayN>p.total)
+    return `<section class="card"><div class="card-body">
+      <div class="empty"><div class="t">Outside the plan</div>
+      <div class="s">The 351 days run ${shortD(PLAN_START)} to ${shortD(PLAN_END)}.</div></div></div></section>`;
+  const flags=redFlags(d);
+  const sess=p.slot?sessById(p.slot):null;
+  const targets=sess?sess.items.slice(0,5).map(x=>{
+    const t=targetFor(x,d);
+    return `<div class="tl"><span class="tl-n">${esc(x.name)}</span>
+      <span class="tl-v">${t.load!=null?t.load+"kg":"—"}</span></div>`;
+  }).join(""):"";
+  return `
+  <section class="card plan-today">
+    <div class="card-head">
+      <h2>Day ${p.dayN}</h2>
+      <span class="card-meta">${p.phase?p.phase.short+" · "+p.phase.name:"—"}</span>
+    </div>
+    <div class="card-body">
+      <div class="pt-row">
+        <span class="shift ${p.shift.type}">${p.shift.label} ${p.shift.n}/4</span>
+        ${p.deload?`<span class="tag warn">Deload · day ${p.deload.dayN}/16</span>`:""}
+        ${p.gate?`<span class="tag gate">${esc(p.gate.name)}</span>`:""}
+        <span class="tag">${p.block?esc(p.block.name):""}</span>
+      </div>
+      <div class="pt-sess">${p.slot?esc(slotName(p.slot)):"Rest · kettlebell or cardio"}</div>
+      <div class="pt-sub">${p.slot?`${p.sets} working sets · ${p.rir} in reserve${p.deload?" · loads capped at 85%":""}`
+        :"Off day. Recovery is the session."}</div>
+      ${macroLine(p.macros)}
+      ${targets?`<div class="tl-wrap"><div class="mini-lab">Target loads today</div>${targets}</div>`:""}
+      ${flags.length?`<div class="flags">${flags.map(f=>`<div class="flag">
+        <div class="flag-t">${esc(f.title)}</div><div class="flag-w">${esc(f.what)}</div></div>`).join("")}</div>`:""}
+    </div>
+  </section>`;
+}
+
+/* ── the whole 351 days at a glance ── */
+function planOverview(){
+  const total=spanDays(PLAN.start,PLAN.end);
+  const at=s=>Math.round((parseISO(s)-PLAN_START)/864e5)/total*100;
+  const bands=PLAN.phases.map(p=>{
+    const l=at(p.from), w=(spanDays(p.from,p.to))/total*100;
+    return `<div class="ph ${p.id}" style="left:${l}%;width:${w}%" title="${esc(p.name)}">
+      <span>${esc(p.short)}</span></div>`;
+  }).join("");
+  const dl=PLAN.deloads.map(s=>`<i class="dl" style="left:${at(s)}%" title="Deload ${s}"></i>`).join("");
+  const gs=PLAN.gates.map(g=>`<i class="gt" style="left:${at(g.on)}%" title="${esc(g.name)}"></i>`).join("");
+  const doneP=Math.max(0,Math.min(100,at(dkey(realToday))));
+  const inPlan=midnight(realToday)>=PLAN_START&&midnight(realToday)<=PLAN_END;
+  const p=planAt(realToday);
+  return `
+  <section class="card">
+    <div class="card-head"><h2>The whole plan</h2>
+      <span class="card-meta">${total} days</span></div>
+    <div class="card-body">
+      <div class="ovr">
+        <div class="ovr-bands">${bands}${dl}${gs}
+          ${inPlan?`<i class="now" style="left:${doneP}%"></i>`:""}</div>
+        <div class="ovr-ends"><span>${shortD(PLAN_START)}</span>
+          <span>${shortD(parseISO(PLAN.target))} · target</span>
+          <span>${shortD(PLAN_END)}</span></div>
+      </div>
+      <div class="key">
+        <span><i class="k-dl"></i>Deload</span><span><i class="k-gt"></i>Phase gate</span>
+        <span><i class="k-now"></i>Today</span>
+      </div>
+      ${inPlan?`<div class="ovr-now">
+        <b>Day ${p.dayN}</b> of ${total} · ${p.toTarget>0?p.toTarget+" days to 9 May":"past the target date"}
+        · ${p.block?esc(p.block.name):""}${p.deload?" · deload":""}
+      </div>`:`<div class="ovr-now">Starts ${shortD(PLAN_START)}.</div>`}
+    </div>
+    <div class="card-body flush" style="border-top:1px solid var(--line)">
+      ${PLAN.phases.map(ph=>{
+        const on=planAt(realToday).phase&&planAt(realToday).phase.id===ph.id;
+        const m=ph.steps?null:ph;
+        return `<div class="ph-row${on?" on":""}">
+          <div class="ph-r1"><span class="ph-n">${esc(ph.short)} · ${esc(ph.name)}</span>
+            <span class="ph-d">${shortD(parseISO(ph.from))} – ${shortD(parseISO(ph.to))}</span></div>
+          <div class="ph-r2">${ph.steps?`${ph.steps[0]}→${ph.steps[ph.steps.length-1]} kcal, stepping weekly · protein ${ph.protein}g`
+            :`${m.kcal.toLocaleString()} kcal · P${m.protein} F${m.fat} C${m.carbs} · ${ph.rate===0?"flat":kg(ph.rate)+"/week"}`}</div>
+          <div class="ph-r3">${esc(ph.note)}</div>
+        </div>`;
+      }).join("")}
+    </div>
+  </section>`;
+}
+
+/* ── this cycle: the 16 days, today marked ── */
+function cycleView(){
+  const days=cycleOf(viewDate);
+  const rows=days.map(d=>{
+    const a=planAt(d), k=dkey(d), me=k===dkey(realToday);
+    const past=midnight(d)<midnight(realToday);
+    const logged=Object.keys((logFor(k).ex)||{}).length>0;
+    const state=!a.slot?"rest":logged?"done":past?"missed":"due";
+    return `<div class="cyc-r ${state}${me?" now":""}">
+      <span class="cyc-d">${a.shift.short}${a.shift.n}</span>
+      <span class="cyc-dt">${shortD(d)}</span>
+      <span class="cyc-s">${a.slot?esc(slotName(a.slot)):"Rest"}</span>
+      <span class="cyc-m">${state==="done"?"logged":state==="missed"?"missed":state==="due"?(me?"today":"due"):""}</span>
+    </div>`;
+  }).join("");
+  const trained=days.filter(d=>Object.keys((logFor(dkey(d)).ex)||{}).length).length;
+  return `
+  <section class="card">
+    <div class="card-head"><h2>This cycle</h2>
+      <span class="card-meta">${trained} / 8 logged</span></div>
+    <div class="card-body flush">${rows}</div>
+  </section>`;
+}
+
+/* ── checkpoints ── */
+function checkpointView(){
+  const d=viewDate, r=recalc(d);
+  return `
+  <section class="card">
+    <div class="card-head"><h2>Checkpoints</h2>
+      <span class="card-meta">against your logged data</span></div>
+    <div class="card-body">
+      <div class="mini-lab" style="margin-top:0">Every week</div>${checkList(weeklyChecks(d))}
+      <div class="mini-lab">Every cycle</div>${checkList(cycleChecks(d))}
+      <div class="mini-lab">This block</div>${checkList(blockChecks(d))}
+      <div class="mini-lab">Phase gates</div>${checkList(gateChecks())}
+      <div class="mini-lab">Four-weekly recalculation</div>
+      <div class="rec ${r?r.state:""}">
+        <div class="rec-t">${r?esc(r.text):"—"}</div>
+        ${r&&r.why?`<div class="rec-w">${esc(r.why)}</div>`:""}
+        <div class="rec-n">A suggestion, not a change. Nothing is applied for you.</div>
+      </div>
+    </div>
+  </section>`;
+}
+
+/* ── measurements ── */
+function measureCard(){
+  const k=viewKey, bw=cacheGet(bwKey(k)), wa=cacheGet(waistKey(k)), sl=cacheGet(sleepKey(k));
+  const a=avgOn(viewDate), p=planAt(viewDate);
+  const s=series("bw:");
+  return `
+  <section class="card">
+    <div class="card-head"><h2>Measurements</h2>
+      <span class="card-meta">${a?a.avg.toFixed(1)+"kg · 7-day":"weigh daily"}</span></div>
+    <div class="card-body">
+      <div class="meas">
+        <div class="field"><label>Bodyweight (kg)</label>
+          <input class="input" type="number" step="0.1" inputmode="decimal" id="mBw" value="${bw??""}" placeholder="—"></div>
+        <div class="field"><label>Waist at navel (cm)</label>
+          <input class="input" type="number" step="0.1" inputmode="decimal" id="mWaist" value="${wa??""}" placeholder="—"></div>
+        <div class="field"><label>Sleep (hours)</label>
+          <input class="input" type="number" step="0.25" inputmode="decimal" id="mSleep" value="${sl??""}" placeholder="—"></div>
+      </div>
+      <div class="hint">Same conditions each morning — after the toilet, before eating or drinking.
+        Individual days mean nothing; the seven-day average is what the plan judges.</div>
+      ${weightChart()}
+      <div class="mini-lab">Cycle photos</div>
+      <div class="cyc-ph" id="cycPhotos">
+        ${["front","side","back"].map(w=>`
+          <button class="cph" data-shot="${w}"><span class="cph-i" id="cph-${w}"></span>
+            <span class="cph-l">${w}</span></button>`).join("")}
+      </div>
+      <div class="hint">Same spot, same light, first thing, before eating. Taken on day 1 of each cycle —
+        in April these are the only evidence you will have.</div>
+    </div>
+  </section>`;
+}
+/* weight against the phase target line */
+function weightChart(){
+  const s=series("bw:"); if(s.length<2)return `<div class="hint">Log a few days and the chart appears here.</div>`;
+  const W=300,H=110,pad=4;
+  const t0=parseISO(s[0].date), t1=parseISO(s[s.length-1].date);
+  const span=Math.max(1,(t1-t0)/864e5);
+  const vals=s.map(x=>x.v);
+  // target line from the first reading, following each phase's weekly rate
+  const tgt=[]; let cur=vals[0];
+  for(let i=0;i<=span;i++){
+    const d=addDays(t0,i), ph=phaseAt(d);
+    if(i)cur+=((ph&&ph.rate)||0)/7;
+    tgt.push(cur);
+  }
+  const lo=Math.min(...vals,...tgt)-0.6, hi=Math.max(...vals,...tgt)+0.6;
+  const X=i=>pad+(i/span)*(W-pad*2), Y=v=>H-pad-((v-lo)/(hi-lo))*(H-pad*2);
+  const tline=tgt.map((v,i)=>`${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(" ");
+  const pts=s.map(x=>`${X((parseISO(x.date)-t0)/864e5).toFixed(1)},${Y(x.v).toFixed(1)}`).join(" ");
+  // seven-day rolling average
+  const roll=s.map((x,i)=>{const w=s.slice(Math.max(0,i-6),i+1);
+    return`${X((parseISO(x.date)-t0)/864e5).toFixed(1)},${Y(w.reduce((a,b)=>a+b.v,0)/w.length).toFixed(1)}`}).join(" ");
+  return `<div class="wchart-wrap">
+    <svg class="wchart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+      <polyline class="w-t" points="${tline}"/>
+      <polyline class="w-r" points="${pts}"/>
+      <polyline class="w-a" points="${roll}"/>
+    </svg>
+    <span class="w-hi">${hi.toFixed(1)}</span><span class="w-lo">${lo.toFixed(1)}</span>
+    <span class="w-d0">${shortD(t0)}</span><span class="w-d1">${shortD(t1)}</span>
+  </div>
+  <div class="wkey"><span><i class="w-ka"></i>7-day average</span><span><i class="w-kt"></i>Phase target</span>
+    <span><i class="w-kr"></i>Daily</span></div>`;
+}
+
+/* ── set logging, inside the training card ── */
+function logRow(x){
+  const p=planAt(viewDate), need=p.sets, t=targetFor(x,viewDate);
+  const got=(dayLog.ex&&dayLog.ex[x.id])||[];
+  const sets=Array.from({length:Math.max(need,got.length)},(_,i)=>{
+    const s=got[i]||{};
+    return `<div class="lg-set">
+      <span class="lg-i">${i+1}</span>
+      <input class="input lg-in" type="number" step="0.5" inputmode="decimal" data-ex="${x.id}" data-set="${i}" data-f="w"
+        value="${s.w??""}" placeholder="${t.load??"kg"}" aria-label="Set ${i+1} weight">
+      <span class="lg-x">×</span>
+      <input class="input lg-in" type="number" inputmode="numeric" data-ex="${x.id}" data-set="${i}" data-f="r"
+        value="${s.r??""}" placeholder="${repFloor(x.reps)}" aria-label="Set ${i+1} reps">
+    </div>`;
+  }).join("");
+  return `<div class="lg">
+    <div class="lg-top"><span class="lg-n">${esc(x.name)}</span>
+      <span class="lg-p">${need} × ${esc(x.reps||"")}</span></div>
+    <div class="lg-sug${t.deload?" dl":""}">${t.load!=null?`<b>${t.load}kg</b> — `:""}${esc(t.why)}</div>
+    <div class="lg-sets">${sets}</div>
+  </div>`;
+}
+
 /* ═══════════════════════════════════════════════════════
    WIRING
    ═══════════════════════════════════════════════════════ */
 function wire(){
+  wirePlan();
   document.querySelectorAll(".task").forEach(n=>n.addEventListener("click",()=>toggle(n.dataset.id)));
   document.querySelectorAll("[data-sess]").forEach(n=>n.addEventListener("click",()=>pickSession(n.dataset.sess)));
   document.querySelectorAll("[data-jump]").forEach(n=>{if(n.dataset.jump)n.addEventListener("click",()=>jumpTo(n.dataset.jump))});
@@ -2109,6 +2955,10 @@ function wireSettings(){
     document.querySelectorAll(".ed-sets").forEach(n=>n.addEventListener("input",e=>editingSession.items[+n.dataset.ei].sets=e.target.value));
     document.querySelectorAll(".ed-reps").forEach(n=>n.addEventListener("input",e=>editingSession.items[+n.dataset.ei].reps=e.target.value));
     document.querySelectorAll(".ed-del").forEach(b=>b.addEventListener("click",()=>{editingSession.items.splice(+b.dataset.ei,1);render()}));
+    const move=(i,to)=>{const it=editingSession.items;if(to<0||to>=it.length)return;
+      [it[i],it[to]]=[it[to],it[i]];render()};
+    document.querySelectorAll(".ed-up").forEach(b=>b.addEventListener("click",()=>move(+b.dataset.ei,+b.dataset.ei-1)));
+    document.querySelectorAll(".ed-dn").forEach(b=>b.addEventListener("click",()=>move(+b.dataset.ei,+b.dataset.ei+1)));
     el("addEx")?.addEventListener("click",()=>{
       editingSession.items.push({id:uid(),name:"",sets:"3",reps:""});render();
       setTimeout(()=>{const n=document.querySelectorAll(".ed-name");n[n.length-1]?.focus()},40);
@@ -2163,6 +3013,45 @@ function refreshProgress(){
     strip.querySelectorAll("[data-jump]").forEach(n=>{if(n.dataset.jump)n.addEventListener("click",()=>jumpTo(n.dataset.jump))})}
 }
 
+
+/* ── plan wiring: set logs, measurements, cycle photos ── */
+function wirePlan(){
+  // set logs — write on blur so a half-typed number never lands
+  document.querySelectorAll(".lg-in").forEach(n=>n.addEventListener("change",async()=>{
+    const id=n.dataset.ex, i=+n.dataset.set, f=n.dataset.f, v=n.value.trim();
+    if(!dayLog.ex)dayLog.ex={};
+    const arr=dayLog.ex[id]||(dayLog.ex[id]=[]);
+    while(arr.length<=i)arr.push({});
+    if(v==="")delete arr[i][f]; else arr[i][f]=Number(v);
+    // drop empty trailing sets so a cleared row does not count as logged
+    dayLog.ex[id]=arr.filter(x=>x&&(x.w!=null||x.r!=null));
+    if(!dayLog.ex[id].length)delete dayLog.ex[id];
+    dayLog.slot=planAt(viewDate).slot||dayLog.slot||null;
+    await save(logKey(viewKey),{slot:dayLog.slot,ex:dayLog.ex});
+    setSyncStatus("synced");
+  }));
+  const num=(id,key)=>el(id)?.addEventListener("change",async e=>{
+    const v=e.target.value.trim();
+    await save(key(viewKey),v===""?null:Number(v));
+    render();
+  });
+  num("mBw",bwKey); num("mWaist",waistKey); num("mSleep",sleepKey);
+  // cycle photos
+  document.querySelectorAll(".cph").forEach(n=>n.addEventListener("click",()=>{
+    pendingShot=n.dataset.shot; el("photoInputC").click();
+  }));
+  if(el("cycPhotos"))paintCyclePhotos();
+}
+let pendingShot=null;
+async function paintCyclePhotos(){
+  const cs=dkey(cycleOf(viewDate)[0]);
+  for(const w of["front","side","back"]){
+    const k=photoCycKey(cs,w), box=el("cph-"+w); if(!box)continue;
+    if(photoCache[k]===undefined)photoCache[k]=await load("photo:"+k);
+    box.innerHTML=photoCache[k]?`<img src="${photoCache[k]}" alt="">`:"+";
+  }
+}
+
 /* ═══════════════════════════════════════════════════════
    ACTIONS
    ═══════════════════════════════════════════════════════ */
@@ -2209,6 +3098,8 @@ async function jumpTo(k){
 }
 async function loadDay(){
   const s=await load(viewKey);
+  const lg=await load(logKey(viewKey));
+  dayLog=lg&&lg.ex?{slot:lg.slot||null,ex:lg.ex}:{slot:null,ex:{}};
   dayState=s?{session:s.session||null,checked:s.checked||{},steps:+s.steps||0,
               abs:(typeof s.abs==="boolean"?s.abs:undefined)}:blankDay();
 }
@@ -2231,7 +3122,9 @@ function resizeAndSave(file,key){
       const cv=document.createElement("canvas");cv.width=w;cv.height=h;
       cv.getContext("2d").drawImage(img,0,0,w,h);
       const data=cv.toDataURL("image/jpeg",.72);
-      photoCache[key]=data;save("photo:"+key,data);renderPhotos();toast("Photo saved");
+      photoCache[key]=data;save("photo:"+key,data);
+      if(key.startsWith("cyc:")){paintCyclePhotos();toast("Photo saved")}
+      else{renderPhotos();toast("Photo saved")}
     };
     img.src=e.target.result;
   };
@@ -2265,6 +3158,15 @@ function tickClock(){
 document.querySelectorAll("#nav button").forEach(b=>b.addEventListener("click",()=>setTab(b.dataset.tab)));
 el("photoInput1").addEventListener("change",e=>{if(e.target.files&&e.target.files[0])resizeAndSave(e.target.files[0],BEFORE_KEY);e.target.value=""});
 el("photoInput2").addEventListener("change",e=>{if(e.target.files&&e.target.files[0])resizeAndSave(e.target.files[0],viewKey);e.target.value=""});
+el("photoInputC").addEventListener("change",e=>{
+  if(e.target.files&&e.target.files[0]&&pendingShot){
+    const cs=dkey(cycleOf(viewDate)[0]);
+    resizeAndSave(e.target.files[0],photoCycKey(cs,pendingShot));
+    cyclePhotoKeys.add(photoCycKey(cs,pendingShot));
+    save("photoIndex",[...cyclePhotoKeys]);
+  }
+  e.target.value="";pendingShot=null;
+});
 
 /* ═══════════════════════════════════════════════════════
    FIRST-RUN SETUP
@@ -2314,10 +3216,10 @@ el("authGoogle").addEventListener("click",async()=>{authErr("");try{await signIn
 
 async function doSignOut(){
   await signOut(auth);
-  _cache=null;DATA_DOC=null;dayState=blankDay();photoCache={};
+  _cache=null;DATA_DOC=null;dayState=blankDay();dayLog={slot:null,ex:{}};photoCache={};cyclePhotoKeys=new Set();
   weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));
   rotationPlan=JSON.parse(JSON.stringify(DEFAULT_ROTATION));
-  scheduleMode="week";rotationStart=parseISO(DEF_START);
+  scheduleMode="rotation";rotationStart=parseISO(ROTA_ANCHOR);
   customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];
   day1PhotoLabel="Before";editingSession=null;activeTab="today";syncNav();
   collapsed={train:false,abs:false,kb:true};kbVideo=KB_VIDEO_DEFAULT;kbEditing=false;
@@ -2363,7 +3265,11 @@ onAuthStateChanged(auth,async user=>{
   const wp=await load("weeklyPlan");if(wp)weeklyPlan=wp;
   const rp=await load("rotationPlan");if(rp)rotationPlan=rp;
   const sm=await load("scheduleMode");if(sm==="rotation"||sm==="week")scheduleMode=sm;
-  const rs=await load("rotationStart");rotationStart=rs?parseISO(rs):parseISO(dkey(START));
+  const rs=await load("rotationStart");
+  // the old default anchored the cycle to the challenge start, which put the
+  // whole rotation four days out — correct it once, leave any other date alone
+  rotationStart=(!rs||rs===DEF_START)?parseISO(ROTA_ANCHOR):parseISO(rs);
+  const pix=await load("photoIndex");cyclePhotoKeys=new Set(Array.isArray(pix)?pix:[]);
   const cs=await load("customSessions");
   if(cs!==null)customSessions=cs;
   else if(isNewUser)customSessions=[];
