@@ -1,6 +1,6 @@
 // Network-first service worker: always try the network so updates land
 // immediately; fall back to the last cached copy when offline.
-const CACHE = "lockin-v1";
+const CACHE = "lockin-v2";
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", e => {
   e.waitUntil(
