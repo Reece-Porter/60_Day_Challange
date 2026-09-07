@@ -36,6 +36,7 @@
   --accent-line:rgba(52,226,126,.32);
   --danger:#FF6058;
   --warn:#F5A524;
+  --night:#8B9BFF;
 
   --r-xs:8px; --r-sm:12px; --r-md:16px; --r-lg:22px; --r-full:999px;
 
@@ -256,6 +257,29 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
 .toggle.on{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
 .toggle:active{transform:scale(.96)}
 
+.today-line{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:9px 0;
+  border-top:1px solid var(--line)}
+.today-line:first-child{border-top:none;padding-top:0}
+.today-k{font-size:11px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--text-3)}
+.today-v{font-size:14px;font-weight:700;text-align:right;min-width:0}
+.gcell.rest{background:var(--line);border-color:var(--line)}
+
+/* ═══════════════════════════════════════════════════════
+   SHIFT BADGES
+   ═══════════════════════════════════════════════════════ */
+.shift{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;letter-spacing:.1em;
+  text-transform:uppercase;padding:4px 10px;border-radius:var(--r-full);white-space:nowrap;border:1px solid}
+.shift.day{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
+.shift.night{background:rgba(139,155,255,.12);border-color:rgba(139,155,255,.32);color:var(--night)}
+.shift.off{background:var(--card-2);border-color:var(--line);color:var(--text-3)}
+.shift-line{display:flex;align-items:center;justify-content:center;gap:9px;margin-top:7px;flex-wrap:wrap}
+.rot-head{display:flex;align-items:center;gap:10px;padding:13px 18px;background:var(--card-2);
+  border-top:1px solid var(--line)}
+.rot-head:first-child{border-top:none}
+.rot-head .t{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--text-2)}
+.prow .pdow.d{color:var(--accent)}
+.prow .pdow.n{color:var(--night)}
+
 /* ═══════════════════════════════════════════════════════
    WEEK STRIP
    ═══════════════════════════════════════════════════════ */
@@ -270,6 +294,8 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
 .wday.done .p{background:var(--accent);box-shadow:var(--glow)}
 .wday.now{border-color:var(--accent-line);background:var(--accent-soft)}
 .wday.now .l,.wday.now .n{color:var(--accent)}
+.wday .l.d{color:var(--accent)}
+.wday .l.n{color:var(--night)}
 .wday.fut{opacity:.4;cursor:default}
 
 /* ═══════════════════════════════════════════════════════
@@ -507,7 +533,9 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
 <nav class="nav hidden" id="navBar">
   <div class="nav-in" id="nav">
     <button data-tab="today" class="on">
-      <svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Today</button>
+      <svg viewBox="0 0 24 24"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.8V21h14V9.8"/></svg>Summary</button>
+    <button data-tab="fitness">
+      <svg viewBox="0 0 24 24"><path d="M6.5 6.5v11M17.5 6.5v11M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/></svg>Fitness</button>
     <button data-tab="progress">
       <svg viewBox="0 0 24 24"><line x1="6" y1="20" x2="6" y2="14"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="10"/></svg>Progress</button>
     <button data-tab="plan">
@@ -557,8 +585,6 @@ const DEF_START="2026-09-09", DEF_TARGET="2027-08-25";
 let START=parseISO(DEF_START), TARGET=parseISO(DEF_TARGET);
 const KEY="recomp:";
 
-const DAILY=[{id:"sleep",t:"7–9 hours sleep",s:"where the work actually pays off"}];
-
 const DEFAULT_SESSIONS=[
   {id:"chestback",name:"Chest & Back",items:[
     {id:"cb_incline",name:"Incline Dumbbell Press",sets:"3",reps:"8–12"},
@@ -604,7 +630,27 @@ const DEFAULT_ABS=[
   {id:"ab_side",name:"Side plank",sets:"3",reps:"30 sec/side",note:"obliques"},
 ];
 const DEFAULT_PLAN={0:{session:"rest",abs:false},1:{session:"chestback",abs:true},2:{session:"shoulderarms",abs:false},3:{session:"rest",abs:true},4:{session:"upperA",abs:false},5:{session:"upperB",abs:true},6:{session:"rest",abs:false}};
-const DEFAULT_GOALS={steps:8000};
+
+/* Shift rotation: 4 days on · 4 off · 4 nights · 4 off = a 16-day cycle,
+   which reads as two 8-day weeks (a days week and a nights week). */
+const CYCLE=16;
+const DEFAULT_ROTATION={
+  0:{session:"rest",abs:false},        1:{session:"chestback",abs:false},
+  2:{session:"rest",abs:false},        3:{session:"shoulderarms",abs:false},
+  4:{session:"upperA",abs:true},       5:{session:"chestback",abs:false},
+  6:{session:"upperB",abs:true},       7:{session:"rest",abs:false},
+  8:{session:"rest",abs:false},        9:{session:"rest",abs:false},
+  10:{session:"rest",abs:false},       11:{session:"rest",abs:false},
+  12:{session:"upperA",abs:true},      13:{session:"shoulderarms",abs:true},
+  14:{session:"chestback",abs:false},  15:{session:"rest",abs:false},
+};
+/* position → what that day actually is */
+function shiftAt(pos){
+  if(pos<4)  return{type:"day",  label:"Day shift", short:"D", n:pos+1};
+  if(pos<8)  return{type:"off",  label:"Off",       short:"O", n:pos-3};
+  if(pos<12) return{type:"night",label:"Night shift",short:"N",n:pos-7};
+  return       {type:"off",  label:"Off",       short:"O", n:pos-11};
+}
 
 /* ═══════════════════════════════════════════════════════
    STATE
@@ -617,9 +663,11 @@ let TOTAL=Math.max(1,Math.round((TARGET-START)/864e5));
 let viewDate=new Date(realToday), viewKey=realKey;
 let dayState=blankDay();
 let weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));
+let rotationPlan=JSON.parse(JSON.stringify(DEFAULT_ROTATION));
+let scheduleMode="week";              // "week" | "rotation"
+let rotationStart=parseISO(DEF_START); // date a block of DAY shifts began
 let customSessions=[...DEFAULT_SESSIONS];
 let customAbs=[...DEFAULT_ABS];
-let goals={...DEFAULT_GOALS};
 let photoCache={}, day1PhotoLabel="Before";
 let activeTab="today", animateNext=true;
 let editingSession=null, openSession=null;
@@ -665,7 +713,16 @@ function cachedDay(k){return k===viewKey?dayState:(_cache?_cache[k]:null)}
 /* ═══════════════════════════════════════════════════════
    COMPLETION MODEL
    ═══════════════════════════════════════════════════════ */
-function planFor(d){return weeklyPlan[d.getDay()]||{session:"rest",abs:false}}
+function cyclePos(d){
+  const diff=Math.round((midnight(d)-midnight(rotationStart))/864e5);
+  return ((diff%CYCLE)+CYCLE)%CYCLE;
+}
+function shiftFor(d){return shiftAt(cyclePos(d))}
+function onRotation(){return scheduleMode==="rotation"}
+function planFor(d){
+  const p=onRotation()?rotationPlan[cyclePos(d)]:weeklyPlan[d.getDay()];
+  return p||{session:"rest",abs:false};
+}
 function absOn(d,data){
   if(data&&typeof data.abs==="boolean")return data.abs;
   return !!planFor(d).abs;
@@ -677,7 +734,7 @@ function sessionKeyFor(d,data){
   return sessById(p)?p:null;
 }
 function taskIds(d,data){
-  const ids=DAILY.map(x=>x.id);
+  const ids=[];
   const s=sessById(sessionKeyFor(d,data));
   if(s)ids.push(...s.items.map(i=>i.id));
   if(absOn(d,data))ids.push(...customAbs.map(a=>a.id));
@@ -686,21 +743,23 @@ function taskIds(d,data){
 function counts(d,data){
   const ids=taskIds(d,data);
   const ch=(data&&data.checked)||{};
-  const stepsOk=(+((data&&data.steps)||0))>=(goals.steps||8000);
-  return{done:ids.filter(i=>ch[i]).length+(stepsOk?1:0),total:ids.length+1};
+  return{done:ids.filter(i=>ch[i]).length,total:ids.length};
 }
+/* a day with nothing scheduled is a rest day — it neither counts nor breaks a streak */
+function isRest(d,data){return counts(d,data).total===0}
 function isComplete(d,data){const c=counts(d,data);return !!data&&c.total>0&&c.done===c.total}
 function isPartial(d,data){return !!data&&counts(d,data).done>0}
 function todayCounts(){return counts(viewDate,dayState)}
 function currentSession(){return sessById(sessionKeyFor(viewDate,dayState))}
-function stepsDone(){return (+dayState.steps||0)>=(goals.steps||8000)}
 
 function stats(){
   let done=0,elapsed=0,best=0,run=0,current=0;const flags=[];
   for(let i=0;i<TOTAL;i++){
     const d=addDays(START,i);
     if(midnight(d)>midnight(realToday))break;
-    const c=isComplete(d,cachedDay(dkey(d)));
+    const data=cachedDay(dkey(d));
+    if(isRest(d,data))continue;              // nothing was asked of this day
+    const c=isComplete(d,data);
     flags.push(c);elapsed++;
     if(c){done++;run++;if(run>best)best=run}else run=0;
   }
@@ -721,7 +780,8 @@ function render(){
   const view=el("view");
   view.className="view"+(animateNext?" anim":"");
   animateNext=false;
-  view.innerHTML = activeTab==="today"? viewToday()
+  view.innerHTML = activeTab==="today"? viewSummary()
+                 : activeTab==="fitness"? viewFitness()
                  : activeTab==="progress"? viewProgress()
                  : activeTab==="plan"? viewPlan()
                  : viewSettings();
@@ -733,30 +793,36 @@ function render(){
   window.scrollTo({top:0,behavior:"auto"});
 }
 
-/* ── TODAY ── */
-function viewToday(){
-  const c=todayCounts(), pct=c.total?Math.round(c.done/c.total*100):0;
-  const pd=dayNumber(viewDate), plan=planFor(viewDate);
-  const sess=currentSession();
-  const chPct=started()?Math.min(100,Math.max(0,Math.round((dayNumber(realToday)-1)/TOTAL*100))):0;
-  const dailyDone=DAILY.filter(x=>dayState.checked[x.id]).length+(stepsDone()?1:0);
-  const trainDone=sess?sess.items.filter(i=>dayState.checked[i.id]).length:0;
-  const absDone=customAbs.filter(a=>dayState.checked[a.id]).length;
-  const absShown=absOn(viewDate,dayState);
-  const st=stats();
+/* ── SUMMARY ── */
+function dateNavHtml(){
+  const pd=dayNumber(viewDate);
+  return `<section class="datenav">
+    <button class="icon-btn" id="prevDay" aria-label="Previous day"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
+    <div class="datenav-mid">
+      <div class="datenav-day">${pretty(viewDate)}</div>
+      ${onRotation()?(()=>{const sh=shiftFor(viewDate);
+        return `<div class="shift-line">
+          <span class="shift ${sh.type}">${sh.label} ${sh.n}/4</span>
+          <span class="datenav-sub">${viewKey===realKey?"Today":(pd>=1&&pd<=TOTAL?"Day "+pd:"")}</span>
+        </div>`;})()
+      :`<div class="datenav-sub">${viewKey===realKey?"Today":(pd>=1&&pd<=TOTAL?"Day "+pd:"Outside the challenge")}</div>`}
+    </div>
+    <button class="icon-btn" id="nextDay" aria-label="Next day"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+  </section>`;
+}
 
-  const trainBody = customSessions.length===0
-    ? `<div class="empty"><div class="t">No sessions yet</div>
-       <div class="s">Build your training sessions in Settings, then assign them to days in Plan.</div>
-       <button class="btn btn-ghost" id="goSettings" style="margin-top:16px">Open settings</button></div>`
-    : `<div class="card-body" style="padding-bottom:14px">
-         <div class="pills">${customSessions.map(s=>`<button class="pill${sess&&sess.id===s.id?" on":""}" data-sess="${s.id}">${esc(s.name)}</button>`).join("")}</div>
-         <div class="hint">${dayState.session?"Switched manually — tap any to change":"From your weekly plan"}</div>
-       </div>
-       ${sess?`<div class="card-body flush" style="border-top:1px solid var(--line)">${sess.items.map(exTask).join("")}</div>`:""}`;
+function viewSummary(){
+  const c=todayCounts(), pct=c.total?Math.round(c.done/c.total*100):0;
+  const pd=dayNumber(viewDate);
+  const sess=currentSession();
+  const absShown=absOn(viewDate,dayState);
+  const rest=c.total===0;
+  const chPct=started()?Math.min(100,Math.max(0,Math.round((dayNumber(realToday)-1)/TOTAL*100))):0;
+  const st=stats();
+  const statusTxt=rest?"Rest day":(pct===100?"Locked in":(c.total-c.done)+" left today");
 
   return `
-  <section class="hero${pct===100?" complete":""}" id="hero">
+  <section class="hero${pct===100&&!rest?" complete":""}" id="hero">
     <div class="hero-grid">
       <div class="hero-top">
         <div class="ring-wrap">
@@ -770,8 +836,8 @@ function viewToday(){
           <div class="lbl">${started()?"Day":"Begins in"}</div>
           <div class="hero-day">${started()?String(Math.max(0,Math.min(pd,TOTAL))).padStart(3,"0"):daysToStart()}</div>
           <div class="hero-of">${started()?"of "+TOTAL:(daysToStart()===1?"day":"days")+" — "+shortD(START)}</div>
-          <div class="hero-status${pct===100?" on":""}" id="heroStatus">
-            <span class="dot"></span><span id="heroStatusTxt">${pct===100?"Locked in":(c.total-c.done)+" left today"}</span>
+          <div class="hero-status${pct===100&&!rest?" on":""}" id="heroStatus">
+            <span class="dot"></span><span id="heroStatusTxt">${statusTxt}</span>
           </div>
         </div>
       </div>
@@ -787,52 +853,89 @@ function viewToday(){
     </div>
   </section>
 
-  <section class="datenav">
-    <button class="icon-btn" id="prevDay" aria-label="Previous day"><svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg></button>
-    <div class="datenav-mid">
-      <div class="datenav-day">${pretty(viewDate)}</div>
-      <div class="datenav-sub">${viewKey===realKey?"Today":(pd>=1&&pd<=TOTAL?"Day "+pd:"Outside the challenge")}</div>
-    </div>
-    <button class="icon-btn" id="nextDay" aria-label="Next day"><svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg></button>
+  ${dateNavHtml()}
+
+  <div class="grid2">
+    <section class="card">
+      <div class="card-head"><h2>On today</h2>
+        <span class="card-meta${pct===100&&!rest?" on":""}">${rest?"rest":c.done+"/"+c.total}</span></div>
+      <div class="card-body">
+        <div class="today-line">
+          <span class="today-k">Training</span>
+          <span class="today-v">${sess?esc(sess.name):"—"}</span>
+        </div>
+        <div class="today-line">
+          <span class="today-k">Abs</span>
+          <span class="today-v">${absShown?customAbs.length+" exercises":"Not scheduled"}</span>
+        </div>
+        <div class="track" style="margin-top:14px"><div class="fill" style="width:${pct}%"></div></div>
+        <button class="btn btn-accent btn-block" id="goFitness" style="margin-top:16px">
+          ${rest?"Open fitness":pct===100?"Review today":"Tick off today"}</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>${onRotation()?"This block":"This week"}</h2>
+        ${onRotation()?`<span class="card-meta">${cyclePos(viewDate)<8?"Days week":"Nights week"}</span>`:""}</div>
+      <div class="card-body"><div class="week" id="weekStrip">${weekStripHtml()}</div></div>
+    </section>
+  </div>
+
+  <section class="stats">
+    <div class="stat${st.current>0?" hot":""}"><div class="k">Streak</div><div class="v">${st.current}<small>d</small></div></div>
+    <div class="stat"><div class="k">Days done</div><div class="v">${st.done}<small>&nbsp;of ${TOTAL}</small></div></div>
+    <div class="stat"><div class="k">Consistency</div><div class="v">${st.rate}<small>%</small></div></div>
+    <div class="stat"><div class="k">Best run</div><div class="v">${st.best}<small>d</small></div></div>
+  </section>`;
+}
+
+/* ── FITNESS ── */
+function viewFitness(){
+  const c=todayCounts(), pct=c.total?Math.round(c.done/c.total*100):0;
+  const plan=planFor(viewDate);
+  const sess=currentSession();
+  const trainDone=sess?sess.items.filter(i=>dayState.checked[i.id]).length:0;
+  const absDone=customAbs.filter(a=>dayState.checked[a.id]).length;
+  const absShown=absOn(viewDate,dayState);
+
+  const trainBody = customSessions.length===0
+    ? `<div class="empty"><div class="t">No sessions yet</div>
+       <div class="s">Build your training sessions in Settings, then assign them to days in Plan.</div>
+       <button class="btn btn-ghost" id="goSettings" style="margin-top:16px">Open settings</button></div>`
+    : `<div class="card-body" style="padding-bottom:14px">
+         <div class="pills">${customSessions.map(s=>`<button class="pill${sess&&sess.id===s.id?" on":""}" data-sess="${s.id}">${esc(s.name)}</button>`).join("")}</div>
+         <div class="hint">${dayState.session?"Switched manually — tap any to change":"From your "+(onRotation()?"rotation":"weekly plan")}</div>
+       </div>
+       ${sess?`<div class="card-body flush" style="border-top:1px solid var(--line)">${sess.items.map(exTask).join("")}</div>`:""}`;
+
+  return `
+  ${dateNavHtml()}
+
+  <section class="hero" style="padding:18px 20px">
+    <div class="hero-bar-top"><span class="k">Today's work</span>
+      <span class="v" id="fitPct">${c.total?c.done+" of "+c.total+" done":"Nothing scheduled"}</span></div>
+    <div class="track"><div class="fill" id="fitFill" style="width:${pct}%"></div></div>
   </section>
 
   <div class="grid2">
-    <div class="stack">
-      <section class="card">
-        <div class="card-head"><h2>Non-negotiables</h2>
-          <span class="card-meta${dailyDone===DAILY.length+1?" on":""}" id="dailyBadge">${dailyDone}/${DAILY.length+1}</span></div>
-        <div class="card-body flush">
-          ${stepsRowHtml()}
-          ${DAILY.map(it=>taskHtml(it.id,it.t,it.s)).join("")}
-        </div>
-      </section>
+    <section class="card">
+      <div class="card-head"><h2>Training</h2>
+        <span class="card-meta${sess&&trainDone===sess.items.length?" on":""}" id="trainBadge">${sess?trainDone+"/"+sess.items.length:""}</span></div>
+      ${trainBody}
+    </section>
 
-      <section class="card">
-        <div class="card-head"><h2>Abs</h2>
-          <span class="card-meta${absShown&&absDone===customAbs.length?" on":""}" id="absBadge">${absShown?absDone+"/"+customAbs.length:"rest"}</span></div>
-        ${absShown?`
-          <div class="card-body flush">${customAbs.map(exTask).join("")}</div>
-          ${!plan.abs?`<div class="card-body" style="border-top:1px solid var(--line)"><button class="btn btn-ghost btn-block btn-sm" id="absOff">Remove from today</button></div>`:""}
-        `:`<div class="card-body"><div class="empty" style="padding:10px 0 4px">
-            <div class="t">Not scheduled today</div>
-            <div class="s">Recovery is part of the plan. Add the session anyway if you want the extra work.</div>
-            <button class="btn btn-ghost" id="absAdd" style="margin-top:16px">Add abs today</button>
-          </div></div>`}
-      </section>
-    </div>
-
-    <div class="stack">
-      <section class="card">
-        <div class="card-head"><h2>Training</h2>
-          <span class="card-meta${sess&&trainDone===sess.items.length?" on":""}" id="trainBadge">${sess?trainDone+"/"+sess.items.length:""}</span></div>
-        ${trainBody}
-      </section>
-
-      <section class="card">
-        <div class="card-head"><h2>This week</h2></div>
-        <div class="card-body"><div class="week" id="weekStrip">${weekStripHtml()}</div></div>
-      </section>
-    </div>
+    <section class="card">
+      <div class="card-head"><h2>Abs</h2>
+        <span class="card-meta${absShown&&absDone===customAbs.length?" on":""}" id="absBadge">${absShown?absDone+"/"+customAbs.length:"rest"}</span></div>
+      ${absShown?`
+        <div class="card-body flush">${customAbs.map(exTask).join("")}</div>
+        ${!plan.abs?`<div class="card-body" style="border-top:1px solid var(--line)"><button class="btn btn-ghost btn-block btn-sm" id="absOff">Remove from today</button></div>`:""}
+      `:`<div class="card-body"><div class="empty" style="padding:10px 0 4px">
+          <div class="t">Not scheduled today</div>
+          <div class="s">Recovery is part of the plan. Add the session anyway if you want the extra work.</div>
+          <button class="btn btn-ghost" id="absAdd" style="margin-top:16px">Add abs today</button>
+        </div></div>`}
+    </section>
   </div>
 
   <button class="btn btn-ghost btn-block" id="resetBtn">Clear this day</button>`;
@@ -849,38 +952,28 @@ function exTask(x){
   const sub=[x.sets&&x.sets+" sets",x.reps].filter(Boolean).join(" · ")+(x.note?" · "+x.note:"");
   return taskHtml(x.id,x.name,sub.trim()===""?"":sub);
 }
-function stepsRowHtml(){
-  const v=+dayState.steps||0, g=goals.steps||8000;
-  const pct=Math.min(100,Math.round(v/g*100));
-  const on=v>=g;
-  return `<div class="steps-row" id="stepsRow">
-    <div class="steps-head">
-      <div class="tick${on?" is-on":""}" id="stepsTick" style="${on?"background:var(--accent);border-color:var(--accent)":""}">
-        <svg viewBox="0 0 24 24" style="${on?"opacity:1;transform:scale(1)":""}"><polyline points="20 6 9 17 4 12"/></svg>
-      </div>
-      <div class="steps-lab"><div class="t">Steps</div><div class="s">${pct}% of today's target</div></div>
-      <div class="steps-val">${v.toLocaleString()}<small> / ${g.toLocaleString()}</small></div>
-    </div>
-    <div class="steps-bar"><div class="track"><div class="fill" style="width:${pct}%"></div></div></div>
-    <div class="steps-ctl">
-      <input class="input" id="stepsInput" type="number" min="0" step="100" inputmode="numeric" placeholder="Enter today's steps" value="${v||""}">
-    </div>
-  </div>`;
-}
 function weekStripHtml(){
   const L=["S","M","T","W","T","F","S"];
-  const start=addDays(viewDate,-viewDate.getDay());
+  const rot=onRotation();
+  // rotation: show the current 8-day block (4 on + 4 off); week: Sun→Sat
+  const len=rot?8:7;
+  const start=rot
+    ? addDays(viewDate,-(cyclePos(viewDate)%8))
+    : addDays(viewDate,-viewDate.getDay());
   let out="";
-  for(let i=0;i<7;i++){
+  for(let i=0;i<len;i++){
     const d=addDays(start,i), k=dkey(d);
     const future=midnight(d)>midnight(realToday);
     const data=cachedDay(k);
     let cls="wday";
     if(future)cls+=" fut";
+    else if(isRest(d,data))cls+=" rest";
     else if(isComplete(d,data))cls+=" done";
     else if(isPartial(d,data))cls+=" part";
     if(k===viewKey)cls+=" now";
-    out+=`<div class="${cls}" data-jump="${future?"":k}"><div class="l">${L[d.getDay()]}</div><div class="n">${d.getDate()}</div><div class="p"></div></div>`;
+    let lab=L[d.getDay()], tint="";
+    if(rot){const sh=shiftFor(d);lab=sh.short+sh.n;tint=sh.type==="day"?" d":sh.type==="night"?" n":"";}
+    out+=`<div class="${cls}" data-jump="${future?"":k}"><div class="l${tint}">${lab}</div><div class="n">${d.getDate()}</div><div class="p"></div></div>`;
   }
   return out;
 }
@@ -904,7 +997,7 @@ function viewProgress(){
         <span><i style="background:var(--accent);border:1px solid var(--accent)"></i>Complete</span>
         <span><i style="background:var(--accent-soft);border:1px solid var(--accent-line)"></i>Partial</span>
         <span><i style="background:var(--card-2);border:1px solid var(--line)"></i>Missed</span>
-        <span><i style="background:transparent;border:1px solid #191D23"></i>Ahead</span>
+        <span><i style="background:var(--line);border:1px solid var(--line)"></i>Rest day</span>
       </div>
     </div>
   </section>
@@ -950,6 +1043,7 @@ function gridHtml(){
       const data=cachedDay(k);
       let cls="gcell";
       if(future)cls+=" fut";
+      else if(isRest(d,data))cls+=" rest";
       else if(isComplete(d,data))cls+=" done";
       else if(isPartial(d,data))cls+=" part";
       if(k===realKey)cls+=" now";
@@ -962,18 +1056,35 @@ function gridHtml(){
 }
 
 /* ── PLAN ── */
+function planRow(idx,label,tint,isNow,plan){
+  const p=plan[idx]||{session:"rest",abs:false};
+  const opts=customSessions.map(s=>`<option value="${s.id}"${p.session===s.id?" selected":""}>${esc(s.name)}</option>`).join("");
+  return `<div class="prow${isNow?" today":""}">
+    <div class="pdow${tint}">${label}</div>
+    <select class="input" data-slot="${idx}">${opts||'<option>No sessions yet</option>'}</select>
+    <button class="toggle${p.abs?" on":""}" data-slot="${idx}">Abs</button>
+  </div>`;
+}
 function viewPlan(){
-  const order=[1,2,3,4,5,6,0];
-  const names=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
-  const rows=order.map(i=>{
-    const p=weeklyPlan[i]||{session:"rest",abs:false};
-    const opts=customSessions.map(s=>`<option value="${s.id}"${p.session===s.id?" selected":""}>${esc(s.name)}</option>`).join("");
-    return `<div class="prow${i===realToday.getDay()?" today":""}">
-      <div class="pdow">${names[i].slice(0,3)}</div>
-      <select class="input" data-dow="${i}">${opts||'<option>No sessions yet</option>'}</select>
-      <button class="toggle${p.abs?" on":""}" data-dow="${i}">Abs</button>
-    </div>`;
-  }).join("");
+  const rot=onRotation();
+  let rows,scheduleTitle,scheduleMeta;
+
+  if(rot){
+    const here=cyclePos(realToday);
+    const block=(from,title)=>`<div class="rot-head"><span class="t">${title}</span>
+        <span class="shift ${shiftAt(from).type}">${shiftAt(from).label}</span></div>`
+      +[0,1,2,3].map(i=>{const idx=from+i,sh=shiftAt(idx);
+        return planRow(idx,sh.short+sh.n,sh.type==="day"?" d":sh.type==="night"?" n":"",idx===here,rotationPlan)}).join("");
+    rows = block(0,"Week 1 · on")+block(4,"Week 1 · off")+block(8,"Week 2 · on")+block(12,"Week 2 · off");
+    scheduleTitle="Shift rotation";
+    scheduleMeta=Object.values(rotationPlan).filter(p=>p.session&&p.session!=="rest").length+" / 16 training days";
+  }else{
+    const order=[1,2,3,4,5,6,0];
+    const names=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    rows=order.map(i=>planRow(i,names[i].slice(0,3),"",i===realToday.getDay(),weeklyPlan)).join("");
+    scheduleTitle="Weekly schedule";
+    scheduleMeta=Object.values(weeklyPlan).filter(p=>p.session&&p.session!=="rest").length+" training days";
+  }
 
   const refs=customSessions.length?customSessions.map(s=>`
     <div class="sref${openSession===s.id?" open":""}" data-ref="${s.id}">
@@ -988,9 +1099,10 @@ function viewPlan(){
 
   return `
   <section class="card">
-    <div class="card-head"><h2>Weekly schedule</h2>
-      <span class="card-meta">${Object.values(weeklyPlan).filter(p=>p.session&&p.session!=="rest").length} training days</span></div>
+    <div class="card-head"><h2>${scheduleTitle}</h2><span class="card-meta">${scheduleMeta}</span></div>
     <div class="card-body flush">${rows}</div>
+    ${rot?`<div class="card-body" style="border-top:1px solid var(--line);padding-top:14px">
+      <div class="hint" style="margin-top:0">4 on · 4 off · 4 nights · 4 off. Anchor the cycle in Settings so the app knows where you are.</div></div>`:""}
   </section>
 
   <section class="card">
@@ -1044,12 +1156,22 @@ function viewSettings(){
     </div>
 
     <div class="sect">
-      <div class="sect-h"><h3>Daily target</h3><p>The step count that counts as done for the day.</p></div>
+      <div class="sect-h"><h3>Schedule</h3><p>How your training repeats. Pick the shift rotation if you work 4 days on, 4 off, 4 nights, 4 off.</p></div>
       <div class="sect-b">
-        <div class="field"><label>Steps goal</label><input class="input" type="number" id="setSteps" value="${goals.steps||8000}"><div class="unit">steps per day</div></div>
-        <button class="btn btn-accent btn-block" id="saveGoals">Save target</button>
+        <div class="pills" style="margin-bottom:14px">
+          <button class="pill${!onRotation()?" on":""}" data-mode="week">7-day week</button>
+          <button class="pill${onRotation()?" on":""}" data-mode="rotation">16-day shift rotation</button>
+        </div>
+        ${onRotation()?`
+          <div class="field"><label>Cycle anchor</label>
+            <input class="input" type="date" id="setRotStart" value="${dkey(rotationStart)}">
+            <div class="unit">The date a block of <b>day shifts</b> started. Today reads as
+              <b style="color:var(--text-2)">${shiftFor(realToday).label} ${shiftFor(realToday).n}/4</b>.</div>
+          </div>
+          <button class="btn btn-accent btn-block" id="saveRot">Save anchor</button>`:""}
       </div>
     </div>
+
   </section>
 
   <section class="card">
@@ -1110,6 +1232,7 @@ function wire(){
   el("nextDay")&&(el("nextDay").disabled=viewKey>=realKey,el("nextDay").addEventListener("click",()=>changeDay(1)));
   el("resetBtn")?.addEventListener("click",resetDay);
   el("goSettings")?.addEventListener("click",()=>setTab("settings"));
+  el("goFitness")?.addEventListener("click",()=>setTab("fitness"));
   el("absAdd")?.addEventListener("click",()=>{dayState.abs=true;persistDay();render()});
   el("absOff")?.addEventListener("click",()=>{dayState.abs=false;persistDay();render()});
 
@@ -1124,18 +1247,19 @@ function wire(){
   el("beforeLabel")?.addEventListener("change",e=>{day1PhotoLabel=e.target.value||"Before";save("day1PhotoLabel",day1PhotoLabel)});
 
   // plan
-  document.querySelectorAll("select[data-dow]").forEach(n=>n.addEventListener("change",e=>{
-    const i=+e.target.dataset.dow;
-    weeklyPlan[i]=weeklyPlan[i]||{session:"rest",abs:false};
-    weeklyPlan[i].session=e.target.value;
-    save("weeklyPlan",weeklyPlan);toast("Schedule updated");
+  const planStore=()=>onRotation()?{plan:rotationPlan,key:"rotationPlan"}:{plan:weeklyPlan,key:"weeklyPlan"};
+  document.querySelectorAll("select[data-slot]").forEach(n=>n.addEventListener("change",e=>{
+    const {plan,key}=planStore(), i=+e.target.dataset.slot;
+    plan[i]=plan[i]||{session:"rest",abs:false};
+    plan[i].session=e.target.value;
+    save(key,plan);toast("Schedule updated");
   }));
-  document.querySelectorAll(".toggle[data-dow]").forEach(n=>n.addEventListener("click",e=>{
-    const i=+e.currentTarget.dataset.dow;
-    weeklyPlan[i]=weeklyPlan[i]||{session:"rest",abs:false};
-    weeklyPlan[i].abs=!weeklyPlan[i].abs;
-    e.currentTarget.classList.toggle("on",weeklyPlan[i].abs);
-    save("weeklyPlan",weeklyPlan);
+  document.querySelectorAll(".toggle[data-slot]").forEach(n=>n.addEventListener("click",e=>{
+    const {plan,key}=planStore(), i=+e.currentTarget.dataset.slot;
+    plan[i]=plan[i]||{session:"rest",abs:false};
+    plan[i].abs=!plan[i].abs;
+    e.currentTarget.classList.toggle("on",plan[i].abs);
+    save(key,plan);
   }));
   document.querySelectorAll("[data-ref] .sref-h").forEach(n=>n.addEventListener("click",()=>{
     const k=n.parentElement.dataset.ref;
@@ -1155,9 +1279,16 @@ function wireSettings(){
     START=parseISO(s);TARGET=parseISO(t);
     save("challenge",{start:s,target:t});applyChallengeDates();render();toast("Dates saved");
   });
-  el("saveGoals")?.addEventListener("click",()=>{
-    goals.steps=Math.max(1,+el("setSteps").value||8000);
-    save("goals",goals);render();toast("Target saved");
+  document.querySelectorAll("[data-mode]").forEach(b=>b.addEventListener("click",()=>{
+    const m=b.dataset.mode;
+    if(m===scheduleMode)return;
+    scheduleMode=m;save("scheduleMode",m);render();
+    toast(m==="rotation"?"Shift rotation on — set your anchor":"Back to a 7-day week");
+  }));
+  el("saveRot")?.addEventListener("click",()=>{
+    const v=el("setRotStart").value;
+    if(!v){toast("Pick a date");return}
+    rotationStart=parseISO(v);save("rotationStart",v);render();toast("Cycle anchored");
   });
 
   document.querySelectorAll(".edit-sess").forEach(b=>b.addEventListener("click",()=>{
@@ -1213,12 +1344,13 @@ function refreshProgress(){
   if(val)val.innerHTML=pct+"<i>%</i>";
   if(hero)hero.classList.toggle("complete",pct===100);
   if(st)st.classList.toggle("on",pct===100);
-  if(stx)stx.textContent=pct===100?"Locked in":(c.total-c.done)+" left today";
+  if(stx)stx.textContent=c.total===0?"Rest day":(pct===100?"Locked in":(c.total-c.done)+" left today");
 
   const sess=currentSession();
-  const d=el("dailyBadge"),t=el("trainBadge"),a=el("absBadge");
-  if(d){const n=DAILY.filter(x=>dayState.checked[x.id]).length+(stepsDone()?1:0);
-    d.textContent=n+"/"+(DAILY.length+1);d.classList.toggle("on",n===DAILY.length+1)}
+  const t=el("trainBadge"),a=el("absBadge");
+  const fp=el("fitPct"),ff=el("fitFill");
+  if(fp)fp.textContent=c.total?c.done+" of "+c.total+" done":"Nothing scheduled";
+  if(ff)ff.style.width=pct+"%";
   if(t&&sess){const n=sess.items.filter(i=>dayState.checked[i.id]).length;
     t.textContent=n+"/"+sess.items.length;t.classList.toggle("on",n===sess.items.length)}
   if(a&&absOn(viewDate,dayState)){const n=customAbs.filter(x=>dayState.checked[x.id]).length;
@@ -1248,7 +1380,6 @@ function toggle(id){
 function pickSession(k){
   if(dayState.session!==k){
     const keep={};
-    DAILY.forEach(d=>{if(dayState.checked[d.id])keep[d.id]=true});
     customAbs.forEach(a=>{if(dayState.checked[a.id])keep[a.id]=true});
     const s=sessById(k);if(s)s.items.forEach(i=>{if(dayState.checked[i.id])keep[i.id]=true});
     dayState.checked=keep;dayState.session=k;persistDay();
@@ -1377,7 +1508,9 @@ async function doSignOut(){
   await signOut(auth);
   _cache=null;DATA_DOC=null;dayState=blankDay();photoCache={};
   weeklyPlan=JSON.parse(JSON.stringify(DEFAULT_PLAN));
-  customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];goals={...DEFAULT_GOALS};
+  rotationPlan=JSON.parse(JSON.stringify(DEFAULT_ROTATION));
+  scheduleMode="week";rotationStart=parseISO(DEF_START);
+  customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];
   day1PhotoLabel="Before";editingSession=null;activeTab="today";syncNav();
   START=parseISO(DEF_START);TARGET=parseISO(DEF_TARGET);applyChallengeDates();
   el("shell").classList.add("hidden");el("navBar").classList.add("hidden");
@@ -1418,13 +1551,13 @@ onAuthStateChanged(auth,async user=>{
   applyChallengeDates();
 
   const wp=await load("weeklyPlan");if(wp)weeklyPlan=wp;
+  const rp=await load("rotationPlan");if(rp)rotationPlan=rp;
+  const sm=await load("scheduleMode");if(sm==="rotation"||sm==="week")scheduleMode=sm;
+  const rs=await load("rotationStart");rotationStart=rs?parseISO(rs):parseISO(dkey(START));
   const cs=await load("customSessions");
   if(cs!==null)customSessions=cs;
   else if(isNewUser)customSessions=[];
   const ca=await load("customAbs");if(ca&&ca.length)customAbs=ca;
-  const g=await load("goals");
-  if(g&&g.steps)goals={...DEFAULT_GOALS,...g};
-  else{const mg=await load("macroGoals");if(mg&&mg.stepsGoal)goals.steps=mg.stepsGoal;}  // migrate old key
   const d1l=await load("day1PhotoLabel");if(d1l)day1PhotoLabel=d1l;
 
   await loadDay();
