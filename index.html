@@ -267,12 +267,24 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
 .card-fold.open{grid-template-rows:1fr}
 .card-fold>.fold-in{overflow:hidden;min-height:0}
 
-/* kettlebell timer */
-.kb-timer{text-align:center;padding:6px 0 2px}
-.kb-time{font-size:clamp(52px,17vw,74px);font-weight:800;letter-spacing:-.055em;line-height:1;
-  font-variant-numeric:tabular-nums;transition:color .3s var(--ease)}
-.kb-timer.done .kb-time{color:var(--accent)}
-.kb-of{font-size:12px;font-weight:700;color:var(--text-3);margin-top:7px;letter-spacing:.06em}
+/* kettlebell circuit timer */
+.kb-timer{text-align:center;padding:4px 0 2px}
+.kb-phase{font-size:10.5px;font-weight:800;letter-spacing:.17em;text-transform:uppercase;
+  color:var(--text-3);transition:color .3s var(--ease)}
+.kb-ex{font-size:17px;font-weight:800;letter-spacing:-.02em;margin-top:6px;min-height:24px}
+.kb-time{font-size:clamp(56px,19vw,84px);font-weight:800;letter-spacing:-.055em;line-height:1;
+  margin:8px 0 14px;font-variant-numeric:tabular-nums;transition:color .3s var(--ease)}
+.kb-next{font-size:12.5px;font-weight:600;color:var(--text-3);margin-top:10px;min-height:18px}
+.kb-total{display:flex;align-items:baseline;justify-content:space-between;
+  margin:16px 0 7px;padding-top:14px;border-top:1px solid var(--line)}
+.kb-total span:first-child{font-size:13px;font-weight:800;font-variant-numeric:tabular-nums}
+.kb-total-of{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)}
+/* work vs rest read instantly, without looking at the words */
+.kb-timer.work .kb-phase,.kb-timer.work .kb-time{color:var(--accent)}
+.kb-timer.work #kbSegFill{background:linear-gradient(90deg,var(--accent-deep),var(--accent))}
+.kb-timer.rest .kb-phase,.kb-timer.rest .kb-time{color:var(--night)}
+.kb-timer.rest #kbSegFill{background:var(--night)}
+.kb-timer.done .kb-time,.kb-timer.done .kb-ex{color:var(--accent)}
 .kb-ctl{display:flex;gap:9px;margin-top:16px}
 .kb-ctl .btn{flex:1}
 .kb-note{font-size:12.5px;color:var(--text-3);font-weight:500;line-height:1.6;margin-top:2px}
@@ -649,6 +661,7 @@ const DEFAULT_SESSIONS=[
 /* 20-minute at-home full body kettlebell circuit:
    3 rounds × 6 moves, 40 sec work / 20 sec rest, 1 min between rounds. */
 const KB_MINUTES=20;
+const KB_ROUNDS=3, KB_WORK=40, KB_REST=20, KB_ROUND_REST=90;
 const KB_VIDEO_DEFAULT="https://www.youtube.com/results?search_query=20+minute+full+body+kettlebell+workout";
 const KETTLEBELL=[
   {id:"kb_swing", name:"Kettlebell swing", sets:"", reps:"40 sec", note:"hips not arms — snap and stand tall"},
@@ -658,6 +671,21 @@ const KETTLEBELL=[
   {id:"kb_lunge", name:"Reverse lunge",    sets:"", reps:"40 sec", note:"alternating, bell at chest"},
   {id:"kb_twist", name:"Russian twist",    sets:"", reps:"40 sec", note:"chest up, rotate through the ribs"},
 ];
+
+/* 3 rounds × (6×40s work + 5×20s rest) + 2×90s round breaks = 1200s */
+const KB_SEGS=(()=>{
+  const out=[];
+  for(let r=0;r<KB_ROUNDS;r++){
+    KETTLEBELL.forEach((ex,i)=>{
+      out.push({type:"work",secs:KB_WORK,ex,round:r+1});
+      const last=i===KETTLEBELL.length-1;
+      if(!last)                 out.push({type:"rest", secs:KB_REST,      next:KETTLEBELL[i+1], round:r+1});
+      else if(r<KB_ROUNDS-1)    out.push({type:"round",secs:KB_ROUND_REST,next:KETTLEBELL[0],   round:r+1});
+    });
+  }
+  return out;
+})();
+const KB_TOTAL=KB_SEGS.reduce((a,s)=>a+s.secs,0);
 
 const DEFAULT_ABS=[
   {id:"ab_leg",name:"Lying leg raises",sets:"3",reps:"12–15",note:"lower abs"},
@@ -976,7 +1004,7 @@ function viewFitness(){
       ${kbTimerHtml()}
     </div>
     <div class="card-body" style="border-top:1px solid var(--line);padding-bottom:12px">
-      <div class="kb-note">3 rounds · 6 moves · 40 sec work, 20 sec rest. One minute back between rounds.</div>
+      <div class="kb-note">3 rounds · 6 moves · 40 sec work, 20 sec rest · 90 sec between rounds.</div>
       ${kbEditing
         ? `<div class="kb-video" style="gap:8px">
              <input class="input" id="kbUrl" value="${esc(kbVideo)}" placeholder="Paste a video URL">
@@ -1024,31 +1052,99 @@ function viewFitness(){
 }
 
 function kbTimerHtml(){
-  const ms=kbElapsed(), total=KB_MINUTES*60000;
-  const done=ms>=total;
-  return `<div class="kb-timer${done?" done":""}" id="kbTimer">
-    <div class="kb-time" id="kbTime">${fmtMS(ms)}</div>
-    <div class="kb-of" id="kbOf">${done?"TIME — well done":"OF "+fmtMS(total)}</div>
-    <div class="track" style="margin-top:14px"><div class="fill" id="kbFill" style="width:${Math.min(100,ms/total*100)}%"></div></div>
+  const st=kbState();
+  const cls=st.done?"done":st.seg?st.seg.type==="work"?"work":"rest":"";
+  return `<div class="kb-timer ${cls}" id="kbTimer">
+    <div class="kb-phase" id="kbPhase">${kbPhaseText(st)}</div>
+    <div class="kb-ex" id="kbEx">${kbExText(st)}</div>
+    <div class="kb-time" id="kbTime">${fmtMS(kbSegLeftMs(st))}</div>
+    <div class="track"><div class="fill" id="kbSegFill" style="width:${kbSegPct(st)}%"></div></div>
+    <div class="kb-next" id="kbNext">${kbNextText(st)}</div>
+    <div class="kb-total">
+      <span id="kbTotal">${fmtMS((KB_TOTAL-st.elapsed)*1000)} left</span>
+      <span class="kb-total-of">of ${fmtMS(KB_TOTAL*1000)}</span>
+    </div>
+    <div class="track"><div class="fill" id="kbFill" style="width:${Math.min(100,st.elapsed/KB_TOTAL*100)}%"></div></div>
     <div class="kb-ctl">
-      <button class="btn ${kbTimer.running?"btn-ghost":"btn-accent"}" id="kbToggle">${kbTimer.running?"Pause":(ms?"Resume":"Start")}</button>
+      <button class="btn ${kbTimer.running?"btn-ghost":"btn-accent"}" id="kbToggle">${kbToggleLabel(st)}</button>
       <button class="btn btn-ghost" id="kbReset">Reset</button>
     </div>
   </div>`;
 }
+/* where we are in the circuit, derived from elapsed time (no drift) */
+function kbState(){
+  const t=kbElapsed()/1000;
+  let acc=0;
+  for(let i=0;i<KB_SEGS.length;i++){
+    const sg=KB_SEGS[i];
+    if(t<acc+sg.secs)return{i,seg:sg,segStart:acc,elapsed:t,done:false};
+    acc+=sg.secs;
+  }
+  return{i:KB_SEGS.length,seg:null,segStart:KB_TOTAL,elapsed:KB_TOTAL,done:true};
+}
+function kbSegLeftMs(st){return st.done?0:(st.segStart+st.seg.secs-st.elapsed)*1000}
+function kbSegPct(st){return st.done?100:((st.elapsed-st.segStart)/st.seg.secs)*100}
+function kbPhaseText(st){
+  if(st.done)return"Complete";
+  const sg=st.seg;
+  if(sg.type==="work") return`Round ${sg.round} of ${KB_ROUNDS} · Work`;
+  if(sg.type==="rest") return`Round ${sg.round} of ${KB_ROUNDS} · Rest`;
+  return`Round ${sg.round} done · Break`;
+}
+function kbExText(st){
+  if(st.done)return"20 minutes done";
+  return st.seg.type==="work"?st.seg.ex.name:"Rest";
+}
+function kbNextText(st){
+  if(st.done)return"";
+  if(st.seg.type==="work"){
+    const nx=KB_SEGS[st.i+1];
+    return nx&&nx.next?"Next: "+nx.next.name:(KB_SEGS[st.i+1]?"Next: rest":"Last one");
+  }
+  return"Up next: "+st.seg.next.name;
+}
+function kbToggleLabel(st){
+  if(st.done)return"Done";
+  if(kbTimer.running)return"Pause";
+  return st.elapsed>0?"Resume":"Start";
+}
 function kbElapsed(){return kbTimer.running? kbTimer.base+(Date.now()-kbTimer.startedAt) : kbTimer.base}
 function fmtMS(ms){
-  const t=Math.max(0,Math.round(ms/1000));
+  const t=Math.max(0,Math.ceil(ms/1000));
   return String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
 }
+let kbLastSeg=-1;
 function kbPaint(){
-  const t=el("kbTime");if(!t)return;
-  const ms=kbElapsed(), total=KB_MINUTES*60000, done=ms>=total;
-  t.textContent=fmtMS(ms);
-  const f=el("kbFill");if(f)f.style.width=Math.min(100,ms/total*100)+"%";
-  const w=el("kbTimer");if(w)w.classList.toggle("done",done);
-  const o=el("kbOf");if(o)o.textContent=done?"TIME — well done":"OF "+fmtMS(total);
-  if(done&&kbTimer.running){kbStop();toast("20 minutes done");}
+  const wrap=el("kbTimer");if(!wrap)return;
+  const st=kbState();
+
+  // segment changed → tick off the finished movement and buzz the phase change
+  if(st.i!==kbLastSeg){
+    if(kbLastSeg>=0&&kbTimer.running){
+      const prev=KB_SEGS[kbLastSeg];
+      if(prev&&prev.type==="work"&&!dayState.checked[prev.ex.id]){
+        dayState.checked[prev.ex.id]=true;persistDay();
+        document.querySelectorAll(`.task[data-id="${prev.ex.id}"]`).forEach(n=>n.classList.add("done"));
+        const kb=el("kbBadge");
+        if(kb){const n=KETTLEBELL.filter(x=>dayState.checked[x.id]).length;
+          kb.textContent=n+"/"+KETTLEBELL.length;kb.classList.toggle("on",n===KETTLEBELL.length)}
+      }
+      if(navigator.vibrate)try{navigator.vibrate(st.done?[120,60,120]:60)}catch(e){}
+    }
+    kbLastSeg=st.i;
+  }
+
+  wrap.className="kb-timer "+(st.done?"done":st.seg?(st.seg.type==="work"?"work":"rest"):"");
+  el("kbPhase").textContent=kbPhaseText(st);
+  el("kbEx").textContent=kbExText(st);
+  el("kbTime").textContent=fmtMS(kbSegLeftMs(st));
+  el("kbNext").textContent=kbNextText(st);
+  el("kbSegFill").style.width=kbSegPct(st)+"%";
+  el("kbTotal").textContent=fmtMS((KB_TOTAL-st.elapsed)*1000)+" left";
+  el("kbFill").style.width=Math.min(100,st.elapsed/KB_TOTAL*100)+"%";
+  const btn=el("kbToggle");if(btn)btn.textContent=kbToggleLabel(st);
+
+  if(st.done&&kbTimer.running){kbStop();toast("Circuit complete — 20 minutes");}
 }
 function kbStop(){
   if(!kbTimer.running)return;
@@ -1364,7 +1460,7 @@ function wire(){
       const b=el("kbToggle");if(b){b.textContent="Pause";b.className="btn btn-ghost"}}
   });
   el("kbReset")?.addEventListener("click",()=>{
-    kbTimer={running:false,base:0,startedAt:0};
+    kbTimer={running:false,base:0,startedAt:0};kbLastSeg=-1;
     const b=el("kbToggle");if(b){b.textContent="Start";b.className="btn btn-accent"}
     kbPaint();
   });
