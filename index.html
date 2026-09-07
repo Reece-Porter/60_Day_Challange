@@ -615,7 +615,7 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
   <div class="modal-box">
     <div class="modal-head">
       <h3>What it works</h3>
-      <p>Six moves chosen to cover the whole body in 20 minutes — here's the job each one does.</p>
+      <p>Eight moves covering push, pull, legs, arms and core. Here is the job each one does.</p>
     </div>
     <div class="modal-body modal-scroll" id="kbInfoBody"></div>
     <div class="modal-foot"><button class="btn btn-ghost btn-block" id="kbInfoClose">Close</button></div>
@@ -686,25 +686,31 @@ const DEFAULT_SESSIONS=[
 /* 20-minute at-home full body kettlebell circuit:
    3 rounds × 6 moves, 40 sec work / 20 sec rest, 1 min between rounds. */
 const KB_MINUTES=20;
-const KB_ROUNDS=3, KB_WORK=40, KB_REST=20, KB_ROUND_REST=90;
+const KB_ROUNDS=3, KB_WORK=30, KB_REST=15, KB_ROUND_REST=90;
 const KB_VIDEO_DEFAULT="https://www.youtube.com/watch?v=ptdB52ggDvo";
 const KETTLEBELL=[
-  {id:"kb_swing", name:"Kettlebell swing", sets:"", reps:"40 sec", note:"hips not arms — snap and stand tall",
+  {id:"kb_swing", name:"Kettlebell swing", sets:"", reps:"30 sec", note:"hips not arms — snap and stand tall",
    works:"Glutes · Hamstrings · Lower back · Core · Grip",
    about:"A hip-hinge power move. The bell is thrown forward by snapping the hips, not lifted with the arms, so it trains the whole posterior chain and doubles as conditioning."},
-  {id:"kb_squat", name:"Goblet squat",     sets:"", reps:"40 sec", note:"bell at chest, elbows inside knees",
+  {id:"kb_squat", name:"Goblet squat",     sets:"", reps:"30 sec", note:"bell at chest, elbows inside knees",
    works:"Quads · Glutes · Inner thigh · Upper back · Core",
    about:"Holding the bell at your chest forces the upper back and core to brace while the legs do the work, which also keeps your squat upright and opens the hips."},
-  {id:"kb_press", name:"Single-arm press", sets:"", reps:"40 sec", note:"20 sec each side, ribs down",
-   works:"Shoulders · Triceps · Upper chest · Obliques",
-   about:"Pressing on one side only means your obliques and deep core have to stop you leaning — so it builds shoulders and anti-tilt core strength at the same time."},
-  {id:"kb_row",   name:"Bent-over row",    sets:"", reps:"40 sec", note:"20 sec each side, flat back",
-   works:"Lats · Mid-back · Rear delts · Biceps · Spinal erectors",
+  {id:"kb_floor", name:"Floor press",      sets:"", reps:"30 sec", note:"on your back, elbows to the floor",
+   works:"Chest · Triceps · Front delts",
+   about:"The chest movement of the circuit. Lying down stops you arching and shortens the range at the bottom, so it is kinder to the shoulders than a full bench press."},
+  {id:"kb_row",   name:"Bent-over row",    sets:"", reps:"30 sec", note:"15 sec each side, flat back",
+   works:"Lats · Mid-back · Rear delts · Biceps · Grip",
    about:"The pulling half of the circuit. Your back and biceps move the weight while the hinged position holds the hamstrings and lower back under tension throughout."},
-  {id:"kb_lunge", name:"Reverse lunge",    sets:"", reps:"40 sec", note:"alternating, bell at chest",
+  {id:"kb_lunge", name:"Reverse lunge",    sets:"", reps:"30 sec", note:"alternating, bell at chest",
    works:"Quads · Glutes · Hamstrings · Hip flexors · Balance",
    about:"Single-leg work, so each side is loaded on its own and the smaller hip stabilisers have to keep you steady. Stepping back is easier on the knees than lunging forward."},
-  {id:"kb_twist", name:"Russian twist",    sets:"", reps:"40 sec", note:"chest up, rotate through the ribs",
+  {id:"kb_press", name:"Single-arm press", sets:"", reps:"30 sec", note:"15 sec each side, ribs down",
+   works:"Shoulders · Triceps · Obliques · Core",
+   about:"Pressing on one side only means your obliques and deep core have to stop you leaning, so it builds shoulders and anti-tilt core strength at the same time."},
+  {id:"kb_curl",  name:"Kettlebell curl",  sets:"", reps:"30 sec", note:"hold the horns, elbows pinned",
+   works:"Biceps · Brachialis · Forearms · Grip",
+   about:"Direct arm work. Gripping the horns rather than the handle turns it into a hammer curl, which builds the forearm and the muscle underneath the bicep as well."},
+  {id:"kb_twist", name:"Russian twist",    sets:"", reps:"30 sec", note:"chest up, rotate through the ribs",
    works:"Obliques · Abs · Deep core",
    about:"Rotation is the one direction the rest of the circuit misses. Turn through the ribs rather than swinging the arms, and keep your chest tall the whole set."},
 ];
@@ -723,6 +729,7 @@ const KB_SEGS=(()=>{
   return out;
 })();
 const KB_TOTAL=KB_SEGS.reduce((a,s)=>a+s.secs,0);
+const KB_LABEL=Math.round(KB_TOTAL/60)+" min";
 
 const DEFAULT_ABS=[
   {id:"ab_leg",name:"Lying leg raises",sets:"3",reps:"12–15",note:"lower abs"},
@@ -1042,7 +1049,7 @@ function viewFitness(){
       ${kbTimerHtml()}
     </div>
     <div class="card-body" style="border-top:1px solid var(--line);padding-bottom:12px">
-      <div class="kb-note">3 rounds · 6 moves · 40 sec work, 20 sec rest · 90 sec between rounds.</div>
+      <div class="kb-note">${KB_ROUNDS} rounds · ${KETTLEBELL.length} moves · ${KB_WORK} sec work, ${KB_REST} sec rest · ${KB_ROUND_REST} sec between rounds.</div>
       ${kbEditing
         ? `<div class="kb-video" style="gap:8px">
              <input class="input" id="kbUrl" value="${esc(kbVideo)}" placeholder="Paste a video URL">
@@ -1080,7 +1087,7 @@ function viewFitness(){
 
     <div class="stack">
       <section class="card">
-        ${foldHead("kb","Kettlebell · 20 min",kbDone+"/"+KETTLEBELL.length,kbDone===KETTLEBELL.length,
+        ${foldHead("kb","Kettlebell · "+KB_LABEL,kbDone+"/"+KETTLEBELL.length,kbDone===KETTLEBELL.length,
           `<button class="info-btn" id="kbInfo" title="What each move works" aria-label="What each move works">i</button>`)}
         ${foldBody("kb",kbInner)}
       </section>
@@ -1131,7 +1138,7 @@ function kbPhaseText(st){
   return`Round ${sg.round} done · Break`;
 }
 function kbExText(st){
-  if(st.done)return"20 minutes done";
+  if(st.done)return"Circuit done";
   return st.seg.type==="work"?st.seg.ex.name:"Rest";
 }
 function kbNextText(st){
@@ -1194,7 +1201,7 @@ function kbPaint(){
   el("kbFill").style.width=Math.min(100,st.elapsed/KB_TOTAL*100)+"%";
   const btn=el("kbToggle");if(btn)btn.textContent=kbToggleLabel(st);
 
-  if(st.done&&kbTimer.running){kbStop();toast("Circuit complete — 20 minutes");}
+  if(st.done&&kbTimer.running){kbStop();toast("Circuit complete — "+KB_LABEL);}
 }
 function kbStop(){
   if(!kbTimer.running)return;
