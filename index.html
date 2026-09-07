@@ -272,9 +272,21 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
   cursor:pointer;display:grid;place-items:center;transition:all .18s var(--ease);font-style:italic;
   font-family:Georgia,serif}
 .info-btn:hover{border-color:var(--accent-line);color:var(--accent);background:var(--accent-soft)}
-.modal-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch}
+.modal-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1 1 auto;min-height:0}
+.kb-figure{flex:0 0 auto;padding:12px 22px 6px;border-bottom:1px solid var(--line);text-align:center}
+.fig-name{font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--accent);min-height:17px}
+#kbBody{display:block;margin:2px auto 0;height:186px;width:100%;max-width:320px}
+#kbBody .nt{fill:var(--raised);stroke:var(--line);stroke-width:.7}
+#kbBody .m{fill:var(--card-2);stroke:var(--line-2);stroke-width:.7;
+  transition:fill .25s var(--ease),stroke .25s var(--ease),filter .25s var(--ease)}
+#kbBody .m.on{fill:var(--accent);stroke:var(--accent);filter:drop-shadow(0 0 3px rgba(52,226,126,.55))}
+#kbBody .fig-lab{fill:var(--text-3);font-size:7px;font-weight:800;letter-spacing:.16em}
+.info-row{cursor:pointer;border-radius:var(--r-xs);transition:background .18s var(--ease)}
+.info-row:hover,.info-row.sel{background:var(--card-2)}
+.info-row.sel .info-n{color:var(--accent)}
+@media(max-height:720px){#kbBody{height:142px}}
 .modal-foot{padding:0 22px 22px}
-.info-row{padding:14px 0;border-top:1px solid var(--line)}
+.info-row{padding:13px 10px;border-top:1px solid var(--line);margin:0 -10px}
 .info-row:first-child{border-top:none;padding-top:2px}
 .info-n{font-size:14.5px;font-weight:700}
 .info-m{font-size:11.5px;font-weight:700;color:var(--accent);margin-top:5px;line-height:1.5}
@@ -616,6 +628,52 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
     <div class="modal-head">
       <h3>What it works</h3>
       <p>Eight moves covering push, pull, legs, arms and core. Here is the job each one does.</p>
+    </div>
+    <div class="kb-figure">
+      <div class="fig-name" id="kbFigName">Kettlebell swing</div>
+      <svg id="kbBody" viewBox="0 0 220 158" aria-hidden="true">
+        <!-- ── FRONT ── -->
+        <circle class="nt" cx="55" cy="12" r="8"/>
+        <rect class="nt" x="51" y="18" width="8" height="6" rx="2.5"/>
+        <ellipse class="m" data-m="shoulders" cx="39" cy="32" rx="8.5" ry="7"/>
+        <ellipse class="m" data-m="shoulders" cx="71" cy="32" rx="8.5" ry="7"/>
+        <path class="m" data-m="chest" d="M45 27h9v15c-6 2-9-1-9-5z"/>
+        <path class="m" data-m="chest" d="M65 27h-9v15c6 2 9-1 9-5z"/>
+        <ellipse class="m" data-m="obliques" cx="45" cy="53" rx="3.2" ry="10"/>
+        <ellipse class="m" data-m="obliques" cx="65" cy="53" rx="3.2" ry="10"/>
+        <rect class="m" data-m="abs" x="48.5" y="44" width="13" height="21" rx="3"/>
+        <ellipse class="m" data-m="biceps" cx="34" cy="47" rx="5" ry="10"/>
+        <ellipse class="m" data-m="biceps" cx="76" cy="47" rx="5" ry="10"/>
+        <ellipse class="m" data-m="forearms" cx="32" cy="67" rx="4.5" ry="11"/>
+        <ellipse class="m" data-m="forearms" cx="78" cy="67" rx="4.5" ry="11"/>
+        <rect class="nt" x="46" y="66" width="18" height="8" rx="3"/>
+        <ellipse class="m" data-m="adductors" cx="55" cy="88" rx="3.4" ry="13"/>
+        <ellipse class="m" data-m="quads" cx="48" cy="92" rx="6.8" ry="18"/>
+        <ellipse class="m" data-m="quads" cx="62" cy="92" rx="6.8" ry="18"/>
+        <ellipse class="nt" cx="48" cy="126" rx="5" ry="15"/>
+        <ellipse class="nt" cx="62" cy="126" rx="5" ry="15"/>
+        <text class="fig-lab" x="55" y="154" text-anchor="middle">FRONT</text>
+        <!-- ── BACK ── -->
+        <circle class="nt" cx="165" cy="12" r="8"/>
+        <rect class="nt" x="161" y="18" width="8" height="6" rx="2.5"/>
+        <ellipse class="m" data-m="shoulders" cx="149" cy="32" rx="8.5" ry="7"/>
+        <ellipse class="m" data-m="shoulders" cx="181" cy="32" rx="8.5" ry="7"/>
+        <path class="m" data-m="upperback" d="M155 25h20l-4 18h-12z"/>
+        <path class="m" data-m="lats" d="M155 42l-6 16 10-4V42z"/>
+        <path class="m" data-m="lats" d="M175 42l6 16-10-4V42z"/>
+        <rect class="m" data-m="lowerback" x="159" y="54" width="12" height="11" rx="3"/>
+        <ellipse class="m" data-m="triceps" cx="144" cy="47" rx="5" ry="10"/>
+        <ellipse class="m" data-m="triceps" cx="186" cy="47" rx="5" ry="10"/>
+        <ellipse class="m" data-m="forearms" cx="142" cy="67" rx="4.5" ry="11"/>
+        <ellipse class="m" data-m="forearms" cx="188" cy="67" rx="4.5" ry="11"/>
+        <ellipse class="m" data-m="glutes" cx="159" cy="72" rx="7.2" ry="7.5"/>
+        <ellipse class="m" data-m="glutes" cx="171" cy="72" rx="7.2" ry="7.5"/>
+        <ellipse class="m" data-m="hams" cx="158" cy="97" rx="6.8" ry="17"/>
+        <ellipse class="m" data-m="hams" cx="172" cy="97" rx="6.8" ry="17"/>
+        <ellipse class="nt" cx="158" cy="127" rx="5.2" ry="14"/>
+        <ellipse class="nt" cx="172" cy="127" rx="5.2" ry="14"/>
+        <text class="fig-lab" x="165" y="154" text-anchor="middle">BACK</text>
+      </svg>
     </div>
     <div class="modal-body modal-scroll" id="kbInfoBody"></div>
     <div class="modal-foot"><button class="btn btn-ghost btn-block" id="kbInfoClose">Close</button></div>
@@ -1154,13 +1212,45 @@ function kbToggleLabel(st){
   if(kbTimer.running)return"Pause";
   return st.elapsed>0?"Resume":"Start";
 }
+/* muscle label → regions on the body diagram */
+const MUSCLE_MAP={
+  "chest":["chest"], "shoulders":["shoulders"], "front delts":["shoulders"], "rear delts":["shoulders"],
+  "biceps":["biceps"], "brachialis":["biceps"], "triceps":["triceps"],
+  "forearms":["forearms"], "grip":["forearms"],
+  "lats":["lats"], "mid-back":["upperback","lats"], "upper back":["upperback"], "lower back":["lowerback"],
+  "abs":["abs"], "core":["abs","obliques"], "deep core":["abs"], "obliques":["obliques"],
+  "glutes":["glutes"], "hamstrings":["hams"], "quads":["quads"], "hip flexors":["quads"],
+  "inner thigh":["adductors"], "balance":[],
+};
+function musclesFor(k){
+  const out=new Set();
+  (k.works||"").split("·").forEach(w=>(MUSCLE_MAP[w.trim().toLowerCase()]||[]).forEach(r=>out.add(r)));
+  return out;
+}
+function paintBody(k){
+  const on=musclesFor(k);
+  document.querySelectorAll("#kbBody .m").forEach(n=>n.classList.toggle("on",on.has(n.dataset.m)));
+  el("kbFigName").textContent=k.name;
+}
+let kbInfoSel=0;
 function openKbInfo(){
-  el("kbInfoBody").innerHTML=KETTLEBELL.map(k=>`
-    <div class="info-row">
+  el("kbInfoBody").innerHTML=KETTLEBELL.map((k,i)=>`
+    <div class="info-row${i===kbInfoSel?" sel":""}" data-i="${i}">
       <div class="info-n">${esc(k.name)}</div>
       <div class="info-m">${esc(k.works)}</div>
       <div class="info-d">${esc(k.about)}</div>
     </div>`).join("");
+  // hover previews on a mouse, tap selects on touch — both paint the figure
+  document.querySelectorAll(".info-row").forEach(n=>{
+    const i=+n.dataset.i;
+    n.addEventListener("mouseenter",()=>paintBody(KETTLEBELL[i]));
+    n.addEventListener("mouseleave",()=>paintBody(KETTLEBELL[kbInfoSel]));
+    n.addEventListener("click",()=>{
+      kbInfoSel=i;paintBody(KETTLEBELL[i]);
+      document.querySelectorAll(".info-row").forEach(r=>r.classList.toggle("sel",+r.dataset.i===i));
+    });
+  });
+  paintBody(KETTLEBELL[kbInfoSel]);
   el("kbInfoModal").classList.remove("hidden");
 }
 function closeKbInfo(){el("kbInfoModal").classList.add("hidden")}
