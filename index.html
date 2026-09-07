@@ -1363,6 +1363,7 @@ function kbToggleLabel(st){
 const D=Math.PI/180;
 const rotX=(v,a)=>{const c=Math.cos(a),s=Math.sin(a);return{x:v.x,y:v.y*c-v.z*s,z:v.y*s+v.z*c}};
 const rotY=(v,a)=>{const c=Math.cos(a),s=Math.sin(a);return{x:v.x*c+v.z*s,y:v.y,z:-v.x*s+v.z*c}};
+const rotZ=(v,a)=>{const c=Math.cos(a),s=Math.sin(a);return{x:v.x*c-v.y*s,y:v.x*s+v.y*c,z:v.z}};
 const add=(p,d,k)=>({x:p.x+d.x*k,y:p.y+d.y*k,z:p.z+d.z*k});
 const cl=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
 /* unit vector: 0 = straight down, 90 = forward, 180 = straight up */
@@ -1371,7 +1372,7 @@ const dir=(deg,yaw)=>{const t=deg*D;return rotY({x:0,y:-Math.cos(t),z:Math.sin(t
 const SEG={torso:46,neck:11,head:10,upper:27,fore:25,thigh:45,shin:44,foot:12};
 const POSE_DEFAULTS={py:96,torso:0,twist:0,tilt:0,
   armL:0,armR:0,elbL:0,elbR:0,hipL:0,hipR:0,kneL:0,kneR:0,
-  armYawL:0,armYawR:0,legYawL:0,legYawR:0,zoom:1,oy:0,armWorld:false,bell:"both"};
+  armYawL:0,armYawR:0,legYawL:0,legYawR:0,stance:0,hipW:10,armWorld:false,bell:"both"};
 
 function skeleton(p){
   const J={};
@@ -1382,7 +1383,7 @@ function skeleton(p){
   J.head =add(J.neck,up,SEG.head);
   const side=rotY({x:1,y:0,z:0},p.twist*D);
   J.shoL=add(J.chest,side,-18); J.shoR=add(J.chest,side,18);
-  J.hipL=add(J.pelvis,side,-10); J.hipR=add(J.pelvis,side,10);
+  J.hipL=add(J.pelvis,side,-p.hipW); J.hipR=add(J.pelvis,side,p.hipW);
 
   /* arms: shoulder swings in world space, elbow only ever flexes (0..150) */
   const arm=(sho,a,e,yaw)=>{
@@ -1394,13 +1395,15 @@ function skeleton(p){
   [J.elbR,J.wriR]=arm(J.shoR,ab+p.armR,p.elbR,p.twist+p.armYawR);
 
   /* legs: knee only ever flexes backward (0..150), never past straight */
-  const leg=(hip,h,k,yaw)=>{
-    const kn=add(hip,dir(h,yaw),SEG.thigh);
-    const an=add(kn,dir(h-cl(k,0,150),yaw),SEG.shin);
+  /* stance widens the legs out to the sides, so wide-stance moves read right */
+  const leg=(hip,h,k,yaw,abd)=>{
+    const out=v=>rotZ(v,abd*D);
+    const kn=add(hip,out(dir(h,yaw)),SEG.thigh);
+    const an=add(kn,out(dir(h-cl(k,0,150),yaw)),SEG.shin);
     return[kn,an,add(an,dir(90,yaw),SEG.foot)];
   };
-  [J.kneL,J.ankL,J.toeL]=leg(J.hipL,p.hipL,p.kneL,p.legYawL);
-  [J.kneR,J.ankR,J.toeR]=leg(J.hipR,p.hipR,p.kneR,p.legYawR);
+  [J.kneL,J.ankL,J.toeL]=leg(J.hipL,p.hipL,p.kneL,p.legYawL,-p.stance);
+  [J.kneR,J.ankR,J.toeR]=leg(J.hipR,p.hipR,p.kneR,p.legYawR,p.stance);
 
   if(p.tilt){                                                 // lay the whole body down
     const o=J.pelvis;
@@ -1413,32 +1416,32 @@ function skeleton(p){
 }
 
 /* limb volumes: [a, b, radius at a, radius at b] */
-const LIMBS=[["pelvis","chest",6.0,8.4],["neck","head",3.0,2.6],
-  ["shoL","elbL",3.5,2.8],["elbL","wriL",2.8,2.2],["shoR","elbR",3.5,2.8],["elbR","wriR",2.8,2.2],
-  ["hipL","kneL",5.2,3.8],["kneL","ankL",3.8,2.5],["hipR","kneR",5.2,3.8],["kneR","ankR",3.8,2.5],
-  ["ankL","toeL",2.5,1.9],["ankR","toeR",2.5,1.9]];
+const LIMBS=[["pelvis","chest",4.6,6.6],["neck","head",2.3,2.0],
+  ["shoL","elbL",2.7,2.1],["elbL","wriL",2.1,1.6],["shoR","elbR",2.7,2.1],["elbR","wriR",2.1,1.6],
+  ["hipL","kneL",4.0,2.9],["kneL","ankL",2.9,1.9],["hipR","kneR",4.0,2.9],["kneR","ankR",2.9,1.9],
+  ["ankL","toeL",1.9,1.4],["ankR","toeR",1.9,1.4]];
 
 const RIG={
   /* every pose is grounded: pelvis height is derived from the leg chain so
      the feet land on the floor instead of hovering or sinking through it. */
   kb_swing:[
-    {torso:64,py:87,hipL:-10,hipR:-10,kneL:25,kneR:25,armWorld:true,armL:-24,armR:-24,elbL:6,elbR:6},
-    {torso:46,py:90,hipL:-8,hipR:-8,kneL:20,kneR:20,armWorld:true,armL:-4,armR:-4,elbL:5,elbR:5},
-    {torso:22,py:94,hipL:-5,hipR:-5,kneL:12,kneR:12,armWorld:true,armL:34,armR:34,elbL:4,elbR:4},
-    {torso:2,py:96,hipL:0,hipR:0,kneL:3,kneR:3,armWorld:true,armL:86,armR:86,elbL:3,elbR:3}],
+    {torso:74,py:88.6,stance:14,hipW:12,hipL:-8,hipR:-8,kneL:18,kneR:18,armWorld:true,armL:-36,armR:-36,elbL:5,elbR:5},
+    {torso:54,py:92,stance:14,hipW:12,hipL:-4,hipR:-4,kneL:10,kneR:10,armWorld:true,armL:-12,armR:-12,elbL:4,elbR:4},
+    {torso:24,py:93,stance:14,hipW:12,hipL:-2,hipR:-2,kneL:6,kneR:6,armWorld:true,armL:36,armR:36,elbL:4,elbR:4},
+    {torso:0,py:93.3,stance:14,hipW:12,hipL:0,hipR:0,kneL:3,kneR:3,armWorld:true,armL:84,armR:84,elbL:3,elbR:3}],
   kb_squat:[
-    {torso:5,py:96,hipL:0,hipR:0,kneL:3,kneR:3,armL:24,armR:24,elbL:138,elbR:138},
-    {torso:14,py:90,hipL:24,hipR:24,kneL:30,kneR:30,armL:24,armR:24,elbL:138,elbR:138},
-    {torso:24,py:82,hipL:45,hipR:45,kneL:52,kneR:52,armL:24,armR:24,elbL:138,elbR:138},
-    {torso:34,py:52,hipL:88,hipR:88,kneL:95,kneR:95,armL:24,armR:24,elbL:138,elbR:138}],
+    {torso:4,py:92.4,stance:16,hipW:12,legYawL:-16,legYawR:16,hipL:0,hipR:0,kneL:4,kneR:4,armL:24,armR:24,elbL:138,elbR:138},
+    {torso:12,py:86.7,stance:16,hipW:12,legYawL:-16,legYawR:16,hipL:30,hipR:30,kneL:34,kneR:34,armL:24,armR:24,elbL:138,elbR:138},
+    {torso:20,py:72.1,stance:16,hipW:12,legYawL:-16,legYawR:16,hipL:58,hipR:58,kneL:62,kneR:62,armL:24,armR:24,elbL:138,elbR:138},
+    {torso:26,py:44.9,stance:16,hipW:12,legYawL:-16,legYawR:16,hipL:95,hipR:95,kneL:105,kneR:105,armL:24,armR:24,elbL:138,elbR:138}],
   kb_floor:[
-    {tilt:-88,py:13,zoom:1.15,hipL:80,hipR:80,kneL:80,kneR:80,armL:14,armR:30,elbL:10,elbR:92,bell:"R"},
-    {tilt:-88,py:13,zoom:1.15,hipL:80,hipR:80,kneL:80,kneR:80,armL:14,armR:58,elbL:10,elbR:56,bell:"R"},
-    {tilt:-88,py:13,zoom:1.15,hipL:80,hipR:80,kneL:80,kneR:80,armL:14,armR:88,elbL:10,elbR:6,bell:"R"}],
+    {tilt:-88,py:13,hipL:80,hipR:80,kneL:80,kneR:80,armL:14,armR:30,elbL:10,elbR:92,bell:"R"},
+    {tilt:-88,py:13,hipL:80,hipR:80,kneL:80,kneR:80,armL:14,armR:58,elbL:10,elbR:56,bell:"R"},
+    {tilt:-88,py:13,hipL:80,hipR:80,kneL:80,kneR:80,armL:14,armR:88,elbL:10,elbR:6,bell:"R"}],
   kb_row:[
-    {torso:62,py:90,hipL:-8,hipR:-8,kneL:20,kneR:20,armWorld:true,armL:2,armR:2,elbL:4,elbR:4,bell:"R"},
-    {torso:62,py:90,hipL:-8,hipR:-8,kneL:20,kneR:20,armWorld:true,armL:2,armR:-4,elbL:4,elbR:52,bell:"R"},
-    {torso:62,py:90,hipL:-8,hipR:-8,kneL:20,kneR:20,armWorld:true,armL:2,armR:-12,elbL:4,elbR:100,bell:"R"}],
+    {torso:50,py:93.3,stance:7,hipL:-5,hipR:-5,kneL:12,kneR:12,armWorld:true,armL:2,armR:4,elbL:16,elbR:6,bell:"R"},
+    {torso:50,py:93.3,stance:7,hipL:-5,hipR:-5,kneL:12,kneR:12,armWorld:true,armL:2,armR:-10,elbL:16,elbR:70,bell:"R"},
+    {torso:50,py:93.3,stance:7,hipL:-5,hipR:-5,kneL:12,kneR:12,armWorld:true,armL:2,armR:-25,elbL:16,elbR:140,bell:"R"}],
   kb_lunge:[
     {torso:4,py:96,hipL:0,hipR:0,kneL:3,kneR:3,armL:24,armR:24,elbL:138,elbR:138},
     {torso:7,py:86,hipL:38,hipR:-10,kneL:40,kneR:35,armL:24,armR:24,elbL:138,elbR:138},
@@ -1453,9 +1456,9 @@ const RIG={
     {torso:2,py:96,kneL:3,kneR:3,armL:6,armR:6,elbL:76,elbR:76},
     {torso:2,py:96,kneL:3,kneR:3,armL:8,armR:8,elbL:142,elbR:142}],
   kb_twist:[
-    {torso:-38,py:20,zoom:1.12,hipL:115,hipR:115,kneL:72,kneR:72,armL:84,armR:84,elbL:62,elbR:62,twist:-34},
-    {torso:-38,py:20,zoom:1.12,hipL:115,hipR:115,kneL:72,kneR:72,armL:84,armR:84,elbL:62,elbR:62,twist:0},
-    {torso:-38,py:20,zoom:1.12,hipL:115,hipR:115,kneL:72,kneR:72,armL:84,armR:84,elbL:62,elbR:62,twist:34}],
+    {torso:-42,py:11.8,stance:9,hipL:125,hipR:125,kneL:79,kneR:79,armL:84,armR:84,elbL:62,elbR:62,twist:-34},
+    {torso:-42,py:11.8,stance:9,hipL:125,hipR:125,kneL:79,kneR:79,armL:84,armR:84,elbL:62,elbR:62,twist:0},
+    {torso:-42,py:11.8,stance:9,hipL:125,hipR:125,kneL:79,kneR:79,armL:84,armR:84,elbL:62,elbR:62,twist:34}],
 };
 const VIEW={kb_swing:58,kb_squat:56,kb_floor:96,kb_row:62,kb_lunge:52,kb_press:66,kb_curl:62,kb_twist:72};
 const REP_LABELS={
@@ -1489,10 +1492,29 @@ function tapered(A,B,rA,rB){
   return `M${(A.x+nx*rA).toFixed(1)},${(A.y+ny*rA).toFixed(1)} L${(B.x+nx*rB).toFixed(1)},${(B.y+ny*rB).toFixed(1)}`+
          ` L${(B.x-nx*rB).toFixed(1)},${(B.y-ny*rB).toFixed(1)} L${(A.x-nx*rA).toFixed(1)},${(A.y-ny*rA).toFixed(1)} Z`;
 }
+/* frame each move automatically: sample its whole range and camera swing once,
+   so every exercise fills the box and nothing drifts off the edge mid-rep */
+const FIT=new Map();
+function fitFor(id){
+  if(FIT.has(id))return FIT.get(id);
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  const base=(VIEW[id]??48);
+  for(let a=-34;a<=34;a+=17)for(let s=0;s<=1.0001;s+=0.125){
+    const J=skeleton(poseAt(RIG[id],s));
+    for(const k in J){
+      const q=project(J[k],(base+a)*D,1,0);
+      x0=Math.min(x0,q.x-8); x1=Math.max(x1,q.x+8);
+      y0=Math.min(y0,q.y-9); y1=Math.max(y1,q.y+9);
+    }
+  }
+  const sc=Math.min(97/(x1-x0),97/(y1-y0));
+  const f={sc,tx:50-sc*(x0+x1)/2,ty:51-sc*(y0+y1)/2};
+  FIT.set(id,f); return f;
+}
 function figureSvg(id,t,ang,ghost){
   const fr=RIG[id]; if(!fr)return"";
   const p=poseAt(fr,t), J=skeleton(p), P={};
-  for(const k in J)P[k]=project(J[k],ang,p.zoom,p.oy);
+  for(const k in J)P[k]=project(J[k],ang,1,0);
   const parts=[];
   const OL='';
   const blob=(pt,r,d)=>`<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="${(r*pt.k).toFixed(2)}" fill="${shade(d)}"${OL}/>`;
@@ -1500,22 +1522,24 @@ function figureSvg(id,t,ang,ghost){
     const A=P[a],B=P[b],d=(A.d+B.d)/2,f=shade(d);
     parts.push({d,s:`<path d="${tapered(A,B,rA*A.k,rB*B.k)}" fill="${f}"${OL}/>`+blob(A,rA,d)+blob(B,rB,d)});
   });
-  parts.push({d:P.shoL.d,s:blob(P.shoL,4.2,P.shoL.d)});
-  parts.push({d:P.shoR.d,s:blob(P.shoR,4.2,P.shoR.d)});
-  parts.push({d:P.wriL.d,s:blob(P.wriL,2.4,P.wriL.d)});
-  parts.push({d:P.wriR.d,s:blob(P.wriR,2.4,P.wriR.d)});
-  parts.push({d:P.head.d,s:`<ellipse cx="${P.head.x.toFixed(1)}" cy="${P.head.y.toFixed(1)}" rx="${(5.9*P.head.k).toFixed(2)}" ry="${(7.3*P.head.k).toFixed(2)}" fill="${shade(P.head.d)}"${OL}/>`});
+  parts.push({d:P.shoL.d,s:blob(P.shoL,3.2,P.shoL.d)});
+  parts.push({d:P.shoR.d,s:blob(P.shoR,3.2,P.shoR.d)});
+  parts.push({d:P.wriL.d,s:blob(P.wriL,1.8,P.wriL.d)});
+  parts.push({d:P.wriR.d,s:blob(P.wriR,1.8,P.wriR.d)});
+  parts.push({d:P.head.d,s:`<ellipse cx="${P.head.x.toFixed(1)}" cy="${P.head.y.toFixed(1)}" rx="${(4.9*P.head.k).toFixed(2)}" ry="${(6.1*P.head.k).toFixed(2)}" fill="${shade(P.head.d)}"${OL}/>`});
   const mode=p.bell, hands=mode==="R"?[P.wriR]:mode==="L"?[P.wriL]:[P.wriL,P.wriR];
   const bx=hands.reduce((s,h)=>s+h.x,0)/hands.length, by=hands.reduce((s,h)=>s+h.y,0)/hands.length;
   const bd=hands.reduce((s,h)=>s+h.d,0)/hands.length, bk=hands.reduce((s,h)=>s+h.k,0)/hands.length;
-  const br=6.6*bk;
+  const br=5.8*bk;
   parts.push({d:bd+2,s:`<g class="bell"><circle cx="${bx.toFixed(1)}" cy="${(by+br*0.55).toFixed(1)}" r="${br.toFixed(2)}"/>`+
     `<path d="M${(bx-br*0.66).toFixed(1)} ${(by+br*0.1).toFixed(1)} q${(br*0.66).toFixed(1)} ${(-br*0.95).toFixed(1)} ${(br*1.32).toFixed(1)} 0" stroke-width="${(br*0.4).toFixed(2)}"/></g>`});
   parts.sort((a,b)=>a.d-b.d);
   const body=parts.map(x=>x.s).join("");
   if(ghost)return `<g opacity=".17">${body}</g>`;
-  const floor=p.oy?"":`<ellipse class="gnd" cx="50" cy="97" rx="26" ry="3.4"/>`;
-  return floor+figureSvg(id,t<0.5?1:0,ang,true)+body;
+  const f=fitFor(id);
+  const floor=`<ellipse class="gnd" cx="50" cy="97" rx="26" ry="3.4"/>`;
+  return `<g transform="translate(${f.tx.toFixed(2)},${f.ty.toFixed(2)}) scale(${f.sc.toFixed(3)})">`+
+    floor+figureSvg(id,t<0.5?1:0,ang,true)+body+`</g>`;
 }
 
 let repT=0, camA=34, camDrag=0, dragging=false, dragX=0;
