@@ -276,11 +276,11 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
 .kb-figure{flex:0 0 auto;padding:12px 22px 6px;border-bottom:1px solid var(--line);text-align:center}
 .fig-name{font-size:12px;font-weight:800;letter-spacing:.05em;color:var(--accent);min-height:17px}
 #kbBody{display:block;margin:2px auto 0;height:186px;width:100%;max-width:320px}
-#kbBody .nt{fill:var(--raised);stroke:var(--line);stroke-width:.7}
-#kbBody .m{fill:var(--card-2);stroke:var(--line-2);stroke-width:.7;
+.bodymap .nt{fill:var(--raised);stroke:var(--line);stroke-width:.7}
+.bodymap .m{fill:var(--card-2);stroke:var(--line-2);stroke-width:.7;
   transition:fill .25s var(--ease),stroke .25s var(--ease),filter .25s var(--ease)}
-#kbBody .m.on{fill:var(--accent);stroke:var(--accent);filter:drop-shadow(0 0 3px rgba(52,226,126,.55))}
-#kbBody .fig-lab{fill:var(--text-3);font-size:7px;font-weight:800;letter-spacing:.16em}
+.bodymap .m.on{fill:var(--accent);stroke:var(--accent);filter:drop-shadow(0 0 3px rgba(52,226,126,.55))}
+.bodymap .fig-lab{fill:var(--text-3);font-size:7px;font-weight:800;letter-spacing:.16em}
 .info-row{cursor:pointer;border-radius:var(--r-xs);transition:background .18s var(--ease)}
 .info-row:hover,.info-row.sel{background:var(--card-2)}
 .info-row.sel .info-n{color:var(--accent)}
@@ -313,6 +313,17 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
 .pose{width:158px;height:158px;display:block;touch-action:none;cursor:grab}
 .pose:active{cursor:grabbing}
 .pose-wrap{text-align:center;user-select:none}
+.pose-body{width:112px;height:auto;display:block;opacity:.95}
+.pose-body .fig-lab{display:none}
+.pose-cols{display:flex;align-items:center;justify-content:center;gap:14px}
+.pose-body-wrap{text-align:center}
+.pose-body-cap{font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--text-3);margin-top:4px}
+.how-chips{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;margin:8px 0 0}
+.how-chip{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  padding:4px 9px;border-radius:999px;background:var(--card-2);border:1px solid var(--line);
+  color:var(--text-2)}
+.info-how{font-size:11px;font-weight:700;color:var(--text-3);margin-top:4px;letter-spacing:.04em}
 .pose .bn{stroke:var(--text-2);stroke-linecap:round;fill:none}
 .pose .hd{fill:var(--text-2)}
 .pose .gnd{fill:rgba(255,255,255,.045)}
@@ -328,18 +339,18 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
   color:var(--text-3);opacity:.6;margin-top:3px}
 .focus-info{width:100%;text-align:center;min-width:0}
 .focus-ex{font-size:clamp(19px,5.5vw,26px);font-weight:800;letter-spacing:-.03em}
-.focus-time{font-size:clamp(62px,21vw,92px);font-weight:800;letter-spacing:-.06em;line-height:1;
-  margin:4px 0 12px;font-variant-numeric:tabular-nums}
+.focus-time{font-size:clamp(54px,19vw,88px);font-weight:800;letter-spacing:-.06em;line-height:1;
+  margin:6px 0 10px;font-variant-numeric:tabular-nums}
 .focus.work .focus-time{color:var(--accent)}
 .focus.rest .focus-time{color:var(--night)}
 .focus.done .focus-time,.focus.done .focus-ex{color:var(--accent)}
-.focus-cues{list-style:none;margin:18px auto 0;display:flex;flex-direction:column;gap:8px;
+.focus-cues{list-style:none;margin:12px auto 0;display:flex;flex-direction:column;gap:8px;
   text-align:left;max-width:330px}
 .focus-cues li{font-size:13px;color:var(--text-2);font-weight:500;padding-left:16px;position:relative;line-height:1.5}
 .focus-cues li::before{content:"";position:absolute;left:0;top:7px;width:5px;height:5px;border-radius:50%;
   background:var(--accent)}
 .focus.rest .focus-cues li::before{background:var(--night)}
-.focus-next{font-size:12.5px;font-weight:600;color:var(--text-3);margin-top:16px}
+.focus-next{font-size:12.5px;font-weight:600;color:var(--text-3);margin-top:11px}
 .focus-foot{flex:0 0 auto}
 .mv-strip{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-bottom:14px}
 .mv-chip{font-size:10px;font-weight:700;padding:5px 10px;border-radius:var(--r-full);cursor:pointer;
@@ -356,9 +367,12 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
   .focus-visual{flex:0 0 auto}
   .pose{width:238px;height:238px}
   .focus-info{text-align:left;flex:1}
+  .pose-body{width:132px}
+  .how-chips{justify-content:flex-start}
   .focus-cues{margin-left:0;margin-right:0}
 }
-@media(max-height:680px){.pose{width:118px;height:118px}.focus-cues{margin-top:10px}}
+@media(max-height:680px){.pose{width:118px;height:118px}.focus-cues{margin-top:8px}
+  .pose-body{width:88px}.pose-body-cap{display:none}}
 
 /* kettlebell circuit timer */
 .kb-timer{text-align:center;padding:4px 0 2px}
@@ -702,7 +716,7 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
     </div>
     <div class="kb-figure">
       <div class="fig-name" id="kbFigName">Kettlebell swing</div>
-      <svg id="kbBody" viewBox="0 0 220 158" aria-hidden="true">
+      <svg id="kbBody" class="bodymap" viewBox="0 0 220 158" aria-hidden="true">
         <!-- ── FRONT ── -->
         <circle class="nt" cx="55" cy="12" r="8"/>
         <rect class="nt" x="51" y="18" width="8" height="6" rx="2.5"/>
@@ -818,35 +832,35 @@ const KB_MINUTES=20;
 const KB_ROUNDS=3, KB_WORK=30, KB_REST=15, KB_ROUND_REST=90;
 const KB_VIDEO_DEFAULT="https://www.youtube.com/watch?v=ptdB52ggDvo";
 const KETTLEBELL=[
-  {id:"kb_swing", name:"Kettlebell swing", sets:"", reps:"30 sec", note:"hips not arms — snap and stand tall",
+  {id:"kb_swing", grip:"Two hands", stance:"Standing", name:"Kettlebell swing", sets:"", reps:"30 sec", note:"hips not arms — snap and stand tall",
    works:"Glutes · Hamstrings · Lower back · Core · Grip",
    about:"A hip-hinge power move. The bell is thrown forward by snapping the hips, not lifted with the arms, so it trains the whole posterior chain and doubles as conditioning.",
    cues:["Hinge at the hips, chest proud","Snap the hips to send it forward","Let it fall back, do not lower it"]},
-  {id:"kb_squat", name:"Goblet squat",     sets:"", reps:"30 sec", note:"bell at chest, elbows inside knees",
+  {id:"kb_squat", grip:"Two hands", stance:"Standing", name:"Goblet squat",     sets:"", reps:"30 sec", note:"bell at chest, elbows inside knees",
    works:"Quads · Glutes · Inner thigh · Upper back · Core",
    about:"Holding the bell at your chest forces the upper back and core to brace while the legs do the work, which also keeps your squat upright and opens the hips.",
    cues:["Bell tight to the chest","Sit down between your knees","Drive up through mid-foot"]},
-  {id:"kb_floor", name:"Floor press",      sets:"", reps:"30 sec", note:"on your back, elbows to the floor",
+  {id:"kb_floor", grip:"One hand", stance:"Lying on your back", name:"Floor press",      sets:"", reps:"30 sec", note:"on your back, elbows to the floor",
    works:"Chest · Triceps · Front delts",
    about:"The chest movement of the circuit. Lying down stops you arching and shortens the range at the bottom, so it is kinder to the shoulders than a full bench press.",
    cues:["Upper arms rest on the floor","Press straight up, wrist stacked","Pause an inch off the floor"]},
-  {id:"kb_row",   name:"Bent-over row",    sets:"", reps:"30 sec", note:"15 sec each side, flat back",
+  {id:"kb_row", grip:"One hand", stance:"Standing, hinged",   name:"Bent-over row",    sets:"", reps:"30 sec", note:"15 sec each side, flat back",
    works:"Lats · Mid-back · Rear delts · Biceps · Grip",
    about:"The pulling half of the circuit. Your back and biceps move the weight while the hinged position holds the hamstrings and lower back under tension throughout.",
    cues:["Hinge to about 45 degrees, flat back","Pull the bell to your hip","Squeeze the shoulder blade"]},
-  {id:"kb_lunge", name:"Reverse lunge",    sets:"", reps:"30 sec", note:"alternating, bell at chest",
+  {id:"kb_lunge", grip:"Two hands", stance:"Standing", name:"Reverse lunge",    sets:"", reps:"30 sec", note:"alternating, bell at chest",
    works:"Quads · Glutes · Hamstrings · Hip flexors · Balance",
    about:"Single-leg work, so each side is loaded on its own and the smaller hip stabilisers have to keep you steady. Stepping back is easier on the knees than lunging forward.",
    cues:["Step back, not forward","Back knee to just above the floor","Push through the front heel"]},
-  {id:"kb_press", name:"Single-arm press", sets:"", reps:"30 sec", note:"15 sec each side, ribs down",
+  {id:"kb_press", grip:"One hand", stance:"Standing", name:"Single-arm press", sets:"", reps:"30 sec", note:"15 sec each side, ribs down",
    works:"Shoulders · Triceps · Obliques · Core",
    about:"Pressing on one side only means your obliques and deep core have to stop you leaning, so it builds shoulders and anti-tilt core strength at the same time.",
    cues:["Ribs down, glutes tight","Press up, not around your head","Finish with the bicep by your ear"]},
-  {id:"kb_curl",  name:"Kettlebell curl",  sets:"", reps:"30 sec", note:"hold the horns, elbows pinned",
+  {id:"kb_curl", grip:"Two hands", stance:"Standing",  name:"Kettlebell curl",  sets:"", reps:"30 sec", note:"hold the horns, elbows pinned",
    works:"Biceps · Brachialis · Forearms · Grip",
    about:"Direct arm work. Gripping the horns rather than the handle turns it into a hammer curl, which builds the forearm and the muscle underneath the bicep as well.",
    cues:["Hold the horns, palms facing in","Elbows pinned to your sides","Lower slower than you lift"]},
-  {id:"kb_twist", name:"Russian twist",    sets:"", reps:"30 sec", note:"chest up, rotate through the ribs",
+  {id:"kb_twist", grip:"Two hands", stance:"Seated", name:"Russian twist",    sets:"", reps:"30 sec", note:"chest up, rotate through the ribs",
    works:"Obliques · Abs · Deep core",
    about:"Rotation is the one direction the rest of the circuit misses. Turn through the ribs rather than swinging the arms, and keep your chest tall the whole set.",
    cues:["Lean back to about 45 degrees","Rotate through the ribs","Keep the chest tall throughout"]},
@@ -1260,10 +1274,14 @@ function kbFocusView(){
 
     <div class="focus-mid">
       <div class="focus-visual">
-        ${show?poseSvg(show.id):'<svg class="pose" viewBox="0 0 100 100"></svg>'}
+        <div class="pose-cols">
+          ${show?poseSvg(show.id):'<svg class="pose" viewBox="0 0 100 100"></svg>'}
+          ${show?miniBody(show):""}
+        </div>
       </div>
       <div class="focus-info">
         <div class="focus-ex" id="kbEx">${kbExText(st)}</div>
+        ${show?`<div class="how-chips"><span class="how-chip">${esc(show.grip)}</span><span class="how-chip">${esc(show.stance)}</span></div>`:""}
         <div class="focus-time" id="kbTime">${fmtMS(kbSegLeftMs(st))}</div>
         <div class="track"><div class="fill" id="kbSegFill" style="width:${kbSegPct(st)}%"></div></div>
         <ul class="focus-cues">${show?(show.cues||[]).map(c=>`<li>${esc(c)}</li>`).join(""):""}</ul>
@@ -1345,6 +1363,7 @@ function kbToggleLabel(st){
 const D=Math.PI/180;
 const rotX=(v,a)=>{const c=Math.cos(a),s=Math.sin(a);return{x:v.x,y:v.y*c-v.z*s,z:v.y*s+v.z*c}};
 const rotY=(v,a)=>{const c=Math.cos(a),s=Math.sin(a);return{x:v.x*c+v.z*s,y:v.y,z:-v.x*s+v.z*c}};
+const rotZ=(v,a)=>{const c=Math.cos(a),s=Math.sin(a);return{x:v.x*c-v.y*s,y:v.x*s+v.y*c,z:v.z}};
 const add=(p,d,k)=>({x:p.x+d.x*k,y:p.y+d.y*k,z:p.z+d.z*k});
 const cl=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
 /* unit vector: 0 = straight down, 90 = forward, 180 = straight up */
@@ -1353,35 +1372,38 @@ const dir=(deg,yaw)=>{const t=deg*D;return rotY({x:0,y:-Math.cos(t),z:Math.sin(t
 const SEG={torso:46,neck:11,head:10,upper:27,fore:25,thigh:45,shin:44,foot:12};
 const POSE_DEFAULTS={py:96,torso:0,twist:0,tilt:0,
   armL:0,armR:0,elbL:0,elbR:0,hipL:0,hipR:0,kneL:0,kneR:0,
-  armYawL:0,armYawR:0,legYawL:0,legYawR:0,zoom:1,oy:0,bell:"both"};
+  armYawL:0,armYawR:0,legYawL:0,legYawR:0,stance:0,hipW:10,armWorld:false,bell:"both"};
 
 function skeleton(p){
   const J={};
   J.pelvis={x:0,y:p.py,z:0};
-  const up=dir(180+p.torso);                                  // spine, leaning forward by torso
+  const up=dir(180-p.torso);                                  // spine, leaning forward by torso
   J.chest=add(J.pelvis,up,SEG.torso);
   J.neck =add(J.chest,up,SEG.neck);
   J.head =add(J.neck,up,SEG.head);
   const side=rotY({x:1,y:0,z:0},p.twist*D);
   J.shoL=add(J.chest,side,-18); J.shoR=add(J.chest,side,18);
-  J.hipL=add(J.pelvis,side,-10); J.hipR=add(J.pelvis,side,10);
+  J.hipL=add(J.pelvis,side,-p.hipW); J.hipR=add(J.pelvis,side,p.hipW);
 
   /* arms: shoulder swings in world space, elbow only ever flexes (0..150) */
   const arm=(sho,a,e,yaw)=>{
     const el=add(sho,dir(a,yaw),SEG.upper);
     return[el,add(el,dir(a+cl(e,0,150),yaw),SEG.fore)];
   };
-  [J.elbL,J.wriL]=arm(J.shoL,p.armL,p.elbL,p.twist+p.armYawL);
-  [J.elbR,J.wriR]=arm(J.shoR,p.armR,p.elbR,p.twist+p.armYawR);
+  const ab=p.armWorld?0:p.torso;             // shoulder angles are relative to the trunk
+  [J.elbL,J.wriL]=arm(J.shoL,ab+p.armL,p.elbL,p.twist+p.armYawL);
+  [J.elbR,J.wriR]=arm(J.shoR,ab+p.armR,p.elbR,p.twist+p.armYawR);
 
   /* legs: knee only ever flexes backward (0..150), never past straight */
-  const leg=(hip,h,k,yaw)=>{
-    const kn=add(hip,dir(h,yaw),SEG.thigh);
-    const an=add(kn,dir(h-cl(k,0,150),yaw),SEG.shin);
+  /* stance widens the legs out to the sides, so wide-stance moves read right */
+  const leg=(hip,h,k,yaw,abd)=>{
+    const out=v=>rotZ(v,abd*D);
+    const kn=add(hip,out(dir(h,yaw)),SEG.thigh);
+    const an=add(kn,out(dir(h-cl(k,0,150),yaw)),SEG.shin);
     return[kn,an,add(an,dir(90,yaw),SEG.foot)];
   };
-  [J.kneL,J.ankL,J.toeL]=leg(J.hipL,p.hipL,p.kneL,p.legYawL);
-  [J.kneR,J.ankR,J.toeR]=leg(J.hipR,p.hipR,p.kneR,p.legYawR);
+  [J.kneL,J.ankL,J.toeL]=leg(J.hipL,p.hipL,p.kneL,p.legYawL,-p.stance);
+  [J.kneR,J.ankR,J.toeR]=leg(J.hipR,p.hipR,p.kneR,p.legYawR,p.stance);
 
   if(p.tilt){                                                 // lay the whole body down
     const o=J.pelvis;
@@ -1394,42 +1416,51 @@ function skeleton(p){
 }
 
 /* limb volumes: [a, b, radius at a, radius at b] */
-const LIMBS=[["pelvis","chest",7.6,10.4],["neck","head",4,3.4],
-  ["shoL","elbL",4.4,3.5],["elbL","wriL",3.5,2.8],["shoR","elbR",4.4,3.5],["elbR","wriR",3.5,2.8],
-  ["hipL","kneL",6.6,4.7],["kneL","ankL",4.7,3.0],["hipR","kneR",6.6,4.7],["kneR","ankR",4.7,3.0],
-  ["ankL","toeL",3.0,2.2],["ankR","toeR",3.0,2.2]];
+const LIMBS=[["pelvis","chest",4.6,6.6],["neck","head",2.3,2.0],
+  ["shoL","elbL",2.7,2.1],["elbL","wriL",2.1,1.6],["shoR","elbR",2.7,2.1],["elbR","wriR",2.1,1.6],
+  ["hipL","kneL",4.0,2.9],["kneL","ankL",2.9,1.9],["hipR","kneR",4.0,2.9],["kneR","ankR",2.9,1.9],
+  ["ankL","toeL",1.9,1.4],["ankR","toeR",1.9,1.4]];
 
 const RIG={
+  /* every pose is grounded: pelvis height is derived from the leg chain so
+     the feet land on the floor instead of hovering or sinking through it. */
   kb_swing:[
-    {torso:66,py:82,hipL:-12,hipR:-12,kneL:26,kneR:26,armL:-26,armR:-26,elbL:6,elbR:6},
-    {torso:34,py:90,hipL:-6,hipR:-6,kneL:14,kneR:14,armL:14,armR:14,elbL:4,elbR:4},
-    {torso:2,py:96,hipL:0,hipR:0,kneL:2,kneR:2,armL:88,armR:88,elbL:2,elbR:2}],
+    {torso:74,py:88.6,stance:14,hipW:12,hipL:-8,hipR:-8,kneL:18,kneR:18,armWorld:true,armL:-36,armR:-36,elbL:5,elbR:5},
+    {torso:54,py:92,stance:14,hipW:12,hipL:-4,hipR:-4,kneL:10,kneR:10,armWorld:true,armL:-12,armR:-12,elbL:4,elbR:4},
+    {torso:24,py:93,stance:14,hipW:12,hipL:-2,hipR:-2,kneL:6,kneR:6,armWorld:true,armL:36,armR:36,elbL:4,elbR:4},
+    {torso:0,py:93.3,stance:14,hipW:12,hipL:0,hipR:0,kneL:3,kneR:3,armWorld:true,armL:84,armR:84,elbL:3,elbR:3}],
   kb_squat:[
-    {torso:6,py:96,hipL:0,hipR:0,kneL:3,kneR:3,armL:26,armR:26,elbL:138,elbR:138},
-    {torso:20,py:74,hipL:45,hipR:45,kneL:66,kneR:66,armL:26,armR:26,elbL:138,elbR:138},
-    {torso:32,py:50,hipL:82,hipR:82,kneL:118,kneR:118,armL:26,armR:26,elbL:138,elbR:138}],
+    {torso:4,py:92.4,stance:16,hipW:12,legYawL:-16,legYawR:16,hipL:0,hipR:0,kneL:4,kneR:4,armL:24,armR:24,elbL:138,elbR:138},
+    {torso:12,py:86.7,stance:16,hipW:12,legYawL:-16,legYawR:16,hipL:30,hipR:30,kneL:34,kneR:34,armL:24,armR:24,elbL:138,elbR:138},
+    {torso:20,py:72.1,stance:16,hipW:12,legYawL:-16,legYawR:16,hipL:58,hipR:58,kneL:62,kneR:62,armL:24,armR:24,elbL:138,elbR:138},
+    {torso:26,py:44.9,stance:16,hipW:12,legYawL:-16,legYawR:16,hipL:95,hipR:95,kneL:105,kneR:105,armL:24,armR:24,elbL:138,elbR:138}],
   kb_floor:[
-    {tilt:-88,py:15,zoom:1.24,oy:26,hipL:78,hipR:78,kneL:92,kneR:92,armL:90,armR:90,elbL:92,elbR:92},
-    {tilt:-88,py:15,zoom:1.24,oy:26,hipL:78,hipR:78,kneL:92,kneR:92,armL:90,armR:90,elbL:4,elbR:4}],
+    {tilt:-88,py:13,hipL:80,hipR:80,kneL:80,kneR:80,armL:14,armR:30,elbL:10,elbR:92,bell:"R"},
+    {tilt:-88,py:13,hipL:80,hipR:80,kneL:80,kneR:80,armL:14,armR:58,elbL:10,elbR:56,bell:"R"},
+    {tilt:-88,py:13,hipL:80,hipR:80,kneL:80,kneR:80,armL:14,armR:88,elbL:10,elbR:6,bell:"R"}],
   kb_row:[
-    {torso:70,py:88,hipL:-8,hipR:-8,kneL:22,kneR:22,armL:0,armR:0,elbL:4,elbR:4},
-    {torso:70,py:88,hipL:-8,hipR:-8,kneL:22,kneR:22,armL:-14,armR:-14,elbL:96,elbR:96}],
+    {torso:50,py:93.3,stance:7,hipL:-5,hipR:-5,kneL:12,kneR:12,armWorld:true,armL:2,armR:4,elbL:16,elbR:6,bell:"R"},
+    {torso:50,py:93.3,stance:7,hipL:-5,hipR:-5,kneL:12,kneR:12,armWorld:true,armL:2,armR:-10,elbL:16,elbR:70,bell:"R"},
+    {torso:50,py:93.3,stance:7,hipL:-5,hipR:-5,kneL:12,kneR:12,armWorld:true,armL:2,armR:-25,elbL:16,elbR:140,bell:"R"}],
   kb_lunge:[
-    {torso:4,py:96,hipL:0,hipR:0,kneL:3,kneR:3,armL:26,armR:26,elbL:138,elbR:138},
-    {torso:8,py:80,hipL:24,hipR:-16,kneL:52,kneR:58,armL:26,armR:26,elbL:138,elbR:138},
-    {torso:10,py:66,hipL:46,hipR:-28,kneL:92,kneR:104,armL:26,armR:26,elbL:138,elbR:138}],
+    {torso:4,py:96,hipL:0,hipR:0,kneL:3,kneR:3,armL:24,armR:24,elbL:138,elbR:138},
+    {torso:7,py:86,hipL:38,hipR:-10,kneL:40,kneR:35,armL:24,armR:24,elbL:138,elbR:138},
+    {torso:10,py:63,hipL:75,hipR:-15,kneL:78,kneR:70,armL:24,armR:24,elbL:138,elbR:138}],
   kb_press:[
-    {torso:2,py:96,kneL:2,kneR:2,armL:4,armR:16,elbL:8,elbR:144,bell:"R"},
-    {torso:2,py:96,kneL:2,kneR:2,armL:4,armR:96,elbL:8,elbR:74,bell:"R"},
-    {torso:2,py:96,kneL:2,kneR:2,armL:4,armR:168,elbL:8,elbR:4,bell:"R"}],
+    {torso:2,py:96,kneL:3,kneR:3,armL:2,armR:10,elbL:6,elbR:145,bell:"R"},
+    {torso:2,py:96,kneL:3,kneR:3,armL:2,armR:70,elbL:6,elbR:96,bell:"R"},
+    {torso:2,py:96,kneL:3,kneR:3,armL:2,armR:120,elbL:6,elbR:48,bell:"R"},
+    {torso:2,py:96,kneL:3,kneR:3,armL:2,armR:174,elbL:6,elbR:4,bell:"R"}],
   kb_curl:[
-    {torso:2,py:96,kneL:2,kneR:2,armL:4,armR:4,elbL:6,elbR:6},
-    {torso:2,py:96,kneL:2,kneR:2,armL:8,armR:8,elbL:142,elbR:142}],
+    {torso:2,py:96,kneL:3,kneR:3,armL:4,armR:4,elbL:6,elbR:6},
+    {torso:2,py:96,kneL:3,kneR:3,armL:6,armR:6,elbL:76,elbR:76},
+    {torso:2,py:96,kneL:3,kneR:3,armL:8,armR:8,elbL:142,elbR:142}],
   kb_twist:[
-    {torso:-42,py:30,zoom:1.1,oy:10,hipL:74,hipR:74,kneL:96,kneR:96,armL:56,armR:56,elbL:74,elbR:74,twist:-30},
-    {torso:-42,py:30,zoom:1.1,oy:10,hipL:74,hipR:74,kneL:96,kneR:96,armL:56,armR:56,elbL:74,elbR:74,twist:30}],
+    {torso:-42,py:11.8,stance:9,hipL:125,hipR:125,kneL:79,kneR:79,armL:84,armR:84,elbL:62,elbR:62,twist:-34},
+    {torso:-42,py:11.8,stance:9,hipL:125,hipR:125,kneL:79,kneR:79,armL:84,armR:84,elbL:62,elbR:62,twist:0},
+    {torso:-42,py:11.8,stance:9,hipL:125,hipR:125,kneL:79,kneR:79,armL:84,armR:84,elbL:62,elbR:62,twist:34}],
 };
-const VIEW={kb_swing:54,kb_squat:52,kb_floor:96,kb_row:58,kb_lunge:48,kb_press:44,kb_curl:40,kb_twist:80};
+const VIEW={kb_swing:58,kb_squat:56,kb_floor:96,kb_row:62,kb_lunge:52,kb_press:66,kb_curl:62,kb_twist:72};
 const REP_LABELS={
   kb_swing:["Hinge back","Drive tall"], kb_squat:["Stand tall","Sit deep"],
   kb_floor:["Elbow down","Press up"],   kb_row:["Arm long","Pull to hip"],
@@ -1451,19 +1482,39 @@ function project(v,ang,z,oy){
 }
 /* nearer body parts sit lighter, so the form reads in three dimensions */
 function shade(d){
-  const t=cl((d+55)/110,0,1);
-  const c=Math.round(86+t*126);
-  return `rgb(${c},${c+5},${c+11})`;
+  const t=cl((d+48)/96,0,1);
+  const e=t*t*(3-2*t);                    // steeper falloff separates near from far
+  const c=Math.round(48+e*172);
+  return `rgb(${c},${c+5},${c+12})`;
 }
 function tapered(A,B,rA,rB){
   const dx=B.x-A.x, dy=B.y-A.y, L=Math.hypot(dx,dy)||1, nx=-dy/L, ny=dx/L;
   return `M${(A.x+nx*rA).toFixed(1)},${(A.y+ny*rA).toFixed(1)} L${(B.x+nx*rB).toFixed(1)},${(B.y+ny*rB).toFixed(1)}`+
          ` L${(B.x-nx*rB).toFixed(1)},${(B.y-ny*rB).toFixed(1)} L${(A.x-nx*rA).toFixed(1)},${(A.y-ny*rA).toFixed(1)} Z`;
 }
-function figureSvg(id,t,ang){
+/* frame each move automatically: sample its whole range and camera swing once,
+   so every exercise fills the box and nothing drifts off the edge mid-rep */
+const FIT=new Map();
+function fitFor(id){
+  if(FIT.has(id))return FIT.get(id);
+  let x0=1e9,x1=-1e9,y0=1e9,y1=-1e9;
+  const base=(VIEW[id]??48);
+  for(let a=-34;a<=34;a+=17)for(let s=0;s<=1.0001;s+=0.125){
+    const J=skeleton(poseAt(RIG[id],s));
+    for(const k in J){
+      const q=project(J[k],(base+a)*D,1,0);
+      x0=Math.min(x0,q.x-8); x1=Math.max(x1,q.x+8);
+      y0=Math.min(y0,q.y-9); y1=Math.max(y1,q.y+9);
+    }
+  }
+  const sc=Math.min(97/(x1-x0),97/(y1-y0));
+  const f={sc,tx:50-sc*(x0+x1)/2,ty:51-sc*(y0+y1)/2};
+  FIT.set(id,f); return f;
+}
+function figureSvg(id,t,ang,ghost){
   const fr=RIG[id]; if(!fr)return"";
   const p=poseAt(fr,t), J=skeleton(p), P={};
-  for(const k in J)P[k]=project(J[k],ang,p.zoom,p.oy);
+  for(const k in J)P[k]=project(J[k],ang,1,0);
   const parts=[];
   const OL='';
   const blob=(pt,r,d)=>`<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="${(r*pt.k).toFixed(2)}" fill="${shade(d)}"${OL}/>`;
@@ -1471,20 +1522,24 @@ function figureSvg(id,t,ang){
     const A=P[a],B=P[b],d=(A.d+B.d)/2,f=shade(d);
     parts.push({d,s:`<path d="${tapered(A,B,rA*A.k,rB*B.k)}" fill="${f}"${OL}/>`+blob(A,rA,d)+blob(B,rB,d)});
   });
-  parts.push({d:P.shoL.d,s:blob(P.shoL,5.2,P.shoL.d)});
-  parts.push({d:P.shoR.d,s:blob(P.shoR,5.2,P.shoR.d)});
-  parts.push({d:P.wriL.d,s:blob(P.wriL,3.0,P.wriL.d)});
-  parts.push({d:P.wriR.d,s:blob(P.wriR,3.0,P.wriR.d)});
-  parts.push({d:P.head.d,s:`<ellipse cx="${P.head.x.toFixed(1)}" cy="${P.head.y.toFixed(1)}" rx="${(6.8*P.head.k).toFixed(2)}" ry="${(8.4*P.head.k).toFixed(2)}" fill="${shade(P.head.d)}"${OL}/>`});
+  parts.push({d:P.shoL.d,s:blob(P.shoL,3.2,P.shoL.d)});
+  parts.push({d:P.shoR.d,s:blob(P.shoR,3.2,P.shoR.d)});
+  parts.push({d:P.wriL.d,s:blob(P.wriL,1.8,P.wriL.d)});
+  parts.push({d:P.wriR.d,s:blob(P.wriR,1.8,P.wriR.d)});
+  parts.push({d:P.head.d,s:`<ellipse cx="${P.head.x.toFixed(1)}" cy="${P.head.y.toFixed(1)}" rx="${(4.9*P.head.k).toFixed(2)}" ry="${(6.1*P.head.k).toFixed(2)}" fill="${shade(P.head.d)}"${OL}/>`});
   const mode=p.bell, hands=mode==="R"?[P.wriR]:mode==="L"?[P.wriL]:[P.wriL,P.wriR];
   const bx=hands.reduce((s,h)=>s+h.x,0)/hands.length, by=hands.reduce((s,h)=>s+h.y,0)/hands.length;
   const bd=hands.reduce((s,h)=>s+h.d,0)/hands.length, bk=hands.reduce((s,h)=>s+h.k,0)/hands.length;
-  const br=6.6*bk;
+  const br=5.8*bk;
   parts.push({d:bd+2,s:`<g class="bell"><circle cx="${bx.toFixed(1)}" cy="${(by+br*0.55).toFixed(1)}" r="${br.toFixed(2)}"/>`+
     `<path d="M${(bx-br*0.66).toFixed(1)} ${(by+br*0.1).toFixed(1)} q${(br*0.66).toFixed(1)} ${(-br*0.95).toFixed(1)} ${(br*1.32).toFixed(1)} 0" stroke-width="${(br*0.4).toFixed(2)}"/></g>`});
   parts.sort((a,b)=>a.d-b.d);
-  const floor=p.oy?"":`<ellipse class="gnd" cx="50" cy="97" rx="26" ry="3.4"/>`;
-  return floor+parts.map(x=>x.s).join("");
+  const body=parts.map(x=>x.s).join("");
+  if(ghost)return `<g opacity=".17">${body}</g>`;
+  const f=fitFor(id);
+  const floor=`<ellipse class="gnd" cx="50" cy="97" rx="26" ry="3.4"/>`;
+  return `<g transform="translate(${f.tx.toFixed(2)},${f.ty.toFixed(2)}) scale(${f.sc.toFixed(3)})">`+
+    floor+figureSvg(id,t<0.5?1:0,ang,true)+body+`</g>`;
 }
 
 let repT=0, camA=34, camDrag=0, dragging=false, dragX=0;
@@ -1508,7 +1563,8 @@ function poseTick(ts){
   requestAnimationFrame(poseTick);
   const wrap=el("poseWrap"); if(!wrap)return;
   const phase=(ts%3000)/3000;                      // ~3s per rep, unhurried
-  repT=0.5-0.5*Math.cos(phase*2*Math.PI);
+  const raw=0.5-0.5*Math.cos(phase*2*Math.PI);
+  repT=raw*raw*(3-2*raw);        // linger at each end of the range
   camA=(VIEW[wrap.dataset.ex]??48)+20*Math.sin(ts/4600);
   paintFrames();
 }
@@ -1535,6 +1591,18 @@ function musclesFor(k){
   (k.works||"").split("·").forEach(w=>(MUSCLE_MAP[w.trim().toLowerCase()]||[]).forEach(r=>out.add(r)));
   return out;
 }
+/* the same diagram the info sheet uses, reused inline during the workout */
+const BODY_MARKUP=(()=>{const n=el("kbBody");return n?n.innerHTML:""})();
+function miniBody(k){
+  if(!BODY_MARKUP)return"";
+  const on=musclesFor(k);
+  const html=BODY_MARKUP.replace(/class="m" data-m="([a-z]+)"/g,
+    (m,g)=>on.has(g)?`class="m on" data-m="${g}"`:m);
+  return `<div class="pose-body-wrap">
+    <svg class="bodymap pose-body" viewBox="0 0 220 158" aria-hidden="true">${html}</svg>
+    <div class="pose-body-cap">Where you should feel it</div>
+  </div>`;
+}
 function paintBody(k){
   const on=musclesFor(k);
   document.querySelectorAll("#kbBody .m").forEach(n=>n.classList.toggle("on",on.has(n.dataset.m)));
@@ -1546,6 +1614,7 @@ function openKbInfo(){
     <div class="info-row${i===kbInfoSel?" sel":""}" data-i="${i}">
       <div class="info-n">${esc(k.name)}</div>
       <div class="info-m">${esc(k.works)}</div>
+      <div class="info-how">${esc(k.grip)} · ${esc(k.stance)}</div>
       <div class="info-d">${esc(k.about)}</div>
     </div>`).join("");
   // hover previews on a mouse, tap selects on touch — both paint the figure
