@@ -1338,108 +1338,157 @@ function kbToggleLabel(st){
   return st.elapsed>0?"Resume":"Start";
 }
 /* ── 3D exercise figure ──────────────────────────────────────────
-   A small articulated rig: poses are joint angles, interpolated over the
-   rep and projected to 2D each frame, so the movement can be watched from
-   any angle. No external 3D library, so nothing to fail at runtime. */
+   A humanoid rig with real joint limits. Angles are measured from
+   straight-down, positive = forward, so elbows and knees can only flex the
+   way a body actually flexes. Rendered as tapered volumes with depth
+   shading, projected to SVG — no 3D library to fail at runtime. */
 const D=Math.PI/180;
 const rotX=(v,a)=>{const c=Math.cos(a),s=Math.sin(a);return{x:v.x,y:v.y*c-v.z*s,z:v.y*s+v.z*c}};
 const rotY=(v,a)=>{const c=Math.cos(a),s=Math.sin(a);return{x:v.x*c+v.z*s,y:v.y,z:-v.x*s+v.z*c}};
 const add=(p,d,k)=>({x:p.x+d.x*k,y:p.y+d.y*k,z:p.z+d.z*k});
-/* two-segment limb: a1 from straight-down, a2 bends the second segment */
-function chain(from,a1,a2,l1,l2,yaw){
-  const d1=rotY(rotX({x:0,y:-1,z:0},a1*D),yaw*D);
-  const mid=add(from,d1,l1);
-  const d2=rotY(rotX({x:0,y:-1,z:0},(a1+a2)*D),yaw*D);
-  return[mid,add(mid,d2,l2)];
-}
-const POSE_DEFAULTS={py:96,pz:0,hinge:0,twist:0,shL:0,shR:0,elL:0,elR:0,
-  thL:0,thR:0,knL:0,knR:0,armYawL:0,armYawR:0,legYawL:0,legYawR:0,zoom:1,oy:0,bell:"both"};
+const cl=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+/* unit vector: 0 = straight down, 90 = forward, 180 = straight up */
+const dir=(deg,yaw)=>{const t=deg*D;return rotY({x:0,y:-Math.cos(t),z:Math.sin(t)},(yaw||0)*D)};
+
+const SEG={torso:46,neck:11,head:10,upper:27,fore:25,thigh:45,shin:44,foot:12};
+const POSE_DEFAULTS={py:96,torso:0,twist:0,tilt:0,
+  armL:0,armR:0,elbL:0,elbR:0,hipL:0,hipR:0,kneL:0,kneR:0,
+  armYawL:0,armYawR:0,legYawL:0,legYawR:0,zoom:1,oy:0,bell:"both"};
+
 function skeleton(p){
   const J={};
-  J.pelvis={x:0,y:p.py,z:p.pz};
-  const sp=rotX({x:0,y:1,z:0},p.hinge*D);
-  J.chest=add(J.pelvis,sp,42);
-  J.head =add(J.chest,sp,26);
+  J.pelvis={x:0,y:p.py,z:0};
+  const up=dir(180+p.torso);                                  // spine, leaning forward by torso
+  J.chest=add(J.pelvis,up,SEG.torso);
+  J.neck =add(J.chest,up,SEG.neck);
+  J.head =add(J.neck,up,SEG.head);
   const side=rotY({x:1,y:0,z:0},p.twist*D);
-  J.shoL=add(J.chest,side,-16); J.shoR=add(J.chest,side,16);
-  J.hipL=add(J.pelvis,side,-9); J.hipR=add(J.pelvis,side,9);
-  [J.elbL,J.handL]=chain(J.shoL,p.shL,p.elL,26,24,p.twist+p.armYawL);
-  [J.elbR,J.handR]=chain(J.shoR,p.shR,p.elR,26,24,p.twist+p.armYawR);
-  [J.kneL,J.footL]=chain(J.hipL,p.thL,p.knL,44,44,p.legYawL);
-  [J.kneR,J.footR]=chain(J.hipR,p.thR,p.knR,44,44,p.legYawR);
+  J.shoL=add(J.chest,side,-18); J.shoR=add(J.chest,side,18);
+  J.hipL=add(J.pelvis,side,-10); J.hipR=add(J.pelvis,side,10);
+
+  /* arms: shoulder swings in world space, elbow only ever flexes (0..150) */
+  const arm=(sho,a,e,yaw)=>{
+    const el=add(sho,dir(a,yaw),SEG.upper);
+    return[el,add(el,dir(a+cl(e,0,150),yaw),SEG.fore)];
+  };
+  [J.elbL,J.wriL]=arm(J.shoL,p.armL,p.elbL,p.twist+p.armYawL);
+  [J.elbR,J.wriR]=arm(J.shoR,p.armR,p.elbR,p.twist+p.armYawR);
+
+  /* legs: knee only ever flexes backward (0..150), never past straight */
+  const leg=(hip,h,k,yaw)=>{
+    const kn=add(hip,dir(h,yaw),SEG.thigh);
+    const an=add(kn,dir(h-cl(k,0,150),yaw),SEG.shin);
+    return[kn,an,add(an,dir(90,yaw),SEG.foot)];
+  };
+  [J.kneL,J.ankL,J.toeL]=leg(J.hipL,p.hipL,p.kneL,p.legYawL);
+  [J.kneR,J.ankR,J.toeR]=leg(J.hipR,p.hipR,p.kneR,p.legYawR);
+
+  if(p.tilt){                                                 // lay the whole body down
+    const o=J.pelvis;
+    for(const k in J){
+      const v=rotX({x:J[k].x-o.x,y:J[k].y-o.y,z:J[k].z-o.z},p.tilt*D);
+      J[k]={x:o.x+v.x,y:o.y+v.y,z:o.z+v.z};
+    }
+  }
   return J;
 }
-const BONES=[["pelvis","chest",10],["chest","shoL",7],["chest","shoR",7],
-  ["shoL","elbL",6],["elbL","handL",5],["shoR","elbR",6],["elbR","handR",5],
-  ["pelvis","hipL",7],["pelvis","hipR",7],
-  ["hipL","kneL",9],["kneL","footL",7],["hipR","kneR",9],["kneR","footR",7]];
 
-/* every move: two ends of its range of motion */
+/* limb volumes: [a, b, radius at a, radius at b] */
+const LIMBS=[["pelvis","chest",7.6,10.4],["neck","head",4,3.4],
+  ["shoL","elbL",4.4,3.5],["elbL","wriL",3.5,2.8],["shoR","elbR",4.4,3.5],["elbR","wriR",3.5,2.8],
+  ["hipL","kneL",6.6,4.7],["kneL","ankL",4.7,3.0],["hipR","kneR",6.6,4.7],["kneR","ankR",4.7,3.0],
+  ["ankL","toeL",3.0,2.2],["ankR","toeR",3.0,2.2]];
+
 const RIG={
-  kb_swing:[{hinge:58,py:84,thL:-6,thR:-6,knL:30,knR:30,shL:26,shR:26,elL:4,elR:4},
-            {hinge:4,py:96,thL:0,thR:0,knL:4,knR:4,shL:-84,shR:-84,elL:2,elR:2}],
-  kb_squat:[{hinge:8,py:96,thL:0,thR:0,knL:4,knR:4,shL:-28,shR:-28,elL:128,elR:128},
-            {hinge:32,py:60,thL:-50,thR:-50,knL:94,knR:94,shL:-28,shR:-28,elL:128,elR:128}],
-  kb_floor:[{hinge:86,py:20,zoom:1.32,oy:30,thL:-128,thR:-128,knL:88,knR:88,shL:180,shR:180,elL:-98,elR:-98},
-            {hinge:86,py:20,zoom:1.32,oy:30,thL:-128,thR:-128,knL:88,knR:88,shL:180,shR:180,elL:0,elR:0}],
-  kb_row:  [{hinge:68,py:88,thL:-6,thR:-6,knL:24,knR:24,shL:2,shR:2,elL:4,elR:4},
-            {hinge:68,py:88,thL:-6,thR:-6,knL:24,knR:24,shL:2,shR:2,elL:98,elR:98}],
-  kb_lunge:[{hinge:6,py:96,thL:0,thR:0,knL:4,knR:4,shL:-28,shR:-28,elL:130,elR:130},
-            {hinge:10,py:70,thL:-32,thR:34,knL:82,knR:96,shL:-28,shR:-28,elL:130,elR:130}],
-  kb_press:[{hinge:3,py:96,thL:0,thR:0,knL:4,knR:4,shL:2,shR:-18,elL:6,elR:148,bell:"R"},
-            {hinge:3,py:96,thL:0,thR:0,knL:4,knR:4,shL:2,shR:-174,elL:6,elR:4,bell:"R"}],
-  kb_curl: [{hinge:3,py:96,thL:0,thR:0,knL:4,knR:4,shL:2,shR:2,elL:6,elR:6},
-            {hinge:3,py:96,thL:0,thR:0,knL:4,knR:4,shL:-6,shR:-6,elL:134,elR:134}],
-  kb_twist:[{hinge:-36,py:40,zoom:1.12,oy:10,thL:-122,thR:-122,knL:78,knR:78,shL:-46,shR:-46,elL:92,elR:92,twist:-30},
-            {hinge:-36,py:40,zoom:1.12,oy:10,thL:-122,thR:-122,knL:78,knR:78,shL:-46,shR:-46,elL:92,elR:92,twist:30}],
+  kb_swing:[
+    {torso:66,py:82,hipL:-12,hipR:-12,kneL:26,kneR:26,armL:-26,armR:-26,elbL:6,elbR:6},
+    {torso:34,py:90,hipL:-6,hipR:-6,kneL:14,kneR:14,armL:14,armR:14,elbL:4,elbR:4},
+    {torso:2,py:96,hipL:0,hipR:0,kneL:2,kneR:2,armL:88,armR:88,elbL:2,elbR:2}],
+  kb_squat:[
+    {torso:6,py:96,hipL:0,hipR:0,kneL:3,kneR:3,armL:26,armR:26,elbL:138,elbR:138},
+    {torso:20,py:74,hipL:45,hipR:45,kneL:66,kneR:66,armL:26,armR:26,elbL:138,elbR:138},
+    {torso:32,py:50,hipL:82,hipR:82,kneL:118,kneR:118,armL:26,armR:26,elbL:138,elbR:138}],
+  kb_floor:[
+    {tilt:-88,py:15,zoom:1.24,oy:26,hipL:78,hipR:78,kneL:92,kneR:92,armL:90,armR:90,elbL:92,elbR:92},
+    {tilt:-88,py:15,zoom:1.24,oy:26,hipL:78,hipR:78,kneL:92,kneR:92,armL:90,armR:90,elbL:4,elbR:4}],
+  kb_row:[
+    {torso:70,py:88,hipL:-8,hipR:-8,kneL:22,kneR:22,armL:0,armR:0,elbL:4,elbR:4},
+    {torso:70,py:88,hipL:-8,hipR:-8,kneL:22,kneR:22,armL:-14,armR:-14,elbL:96,elbR:96}],
+  kb_lunge:[
+    {torso:4,py:96,hipL:0,hipR:0,kneL:3,kneR:3,armL:26,armR:26,elbL:138,elbR:138},
+    {torso:8,py:80,hipL:24,hipR:-16,kneL:52,kneR:58,armL:26,armR:26,elbL:138,elbR:138},
+    {torso:10,py:66,hipL:46,hipR:-28,kneL:92,kneR:104,armL:26,armR:26,elbL:138,elbR:138}],
+  kb_press:[
+    {torso:2,py:96,kneL:2,kneR:2,armL:4,armR:16,elbL:8,elbR:144,bell:"R"},
+    {torso:2,py:96,kneL:2,kneR:2,armL:4,armR:96,elbL:8,elbR:74,bell:"R"},
+    {torso:2,py:96,kneL:2,kneR:2,armL:4,armR:168,elbL:8,elbR:4,bell:"R"}],
+  kb_curl:[
+    {torso:2,py:96,kneL:2,kneR:2,armL:4,armR:4,elbL:6,elbR:6},
+    {torso:2,py:96,kneL:2,kneR:2,armL:8,armR:8,elbL:142,elbR:142}],
+  kb_twist:[
+    {torso:-42,py:30,zoom:1.1,oy:10,hipL:74,hipR:74,kneL:96,kneR:96,armL:56,armR:56,elbL:74,elbR:74,twist:-30},
+    {torso:-42,py:30,zoom:1.1,oy:10,hipL:74,hipR:74,kneL:96,kneR:96,armL:56,armR:56,elbL:74,elbR:74,twist:30}],
 };
-/* base camera angle per move; the view sweeps gently either side of it */
-const VIEW={kb_swing:32,kb_squat:36,kb_floor:96,kb_row:40,kb_lunge:34,kb_press:38,kb_curl:34,kb_twist:76};
+const VIEW={kb_swing:54,kb_squat:52,kb_floor:96,kb_row:58,kb_lunge:48,kb_press:44,kb_curl:40,kb_twist:80};
 const REP_LABELS={
   kb_swing:["Hinge back","Drive tall"], kb_squat:["Stand tall","Sit deep"],
   kb_floor:["Elbow down","Press up"],   kb_row:["Arm long","Pull to hip"],
   kb_lunge:["Stand","Step back"],       kb_press:["Racked","Locked out"],
   kb_curl:["Arms long","Curl up"],      kb_twist:["Bell left","Bell right"],
 };
-function fullPose(p){return{...POSE_DEFAULTS,...p}}
+const fullPose=p=>({...POSE_DEFAULTS,...p});
 function lerpPose(a,b,t){const o={};for(const k in a)o[k]=typeof a[k]==="number"?a[k]+(b[k]-a[k])*t:a[k];return o}
-
-/* project a joint to the 2D viewBox, with gentle depth scaling */
+/* walk a multi-keyframe sequence, so longer moves stay fluid */
+function poseAt(frames,t){
+  if(frames.length===1)return fullPose(frames[0]);
+  const n=frames.length-1, x=cl(t,0,1)*n, i=Math.min(n-1,Math.floor(x));
+  return lerpPose(fullPose(frames[i]),fullPose(frames[i+1]),x-i);
+}
 function project(v,ang,z,oy){
   const r=rotY(v,ang);
   const k=250/(250-r.z*0.55)*z;
-  return{x:50+r.x*0.44*k, y:99-oy-r.y*0.44*k, d:r.z};
+  return{x:50+r.x*0.42*k, y:99-oy-r.y*0.42*k, d:r.z, k};
+}
+/* nearer body parts sit lighter, so the form reads in three dimensions */
+function shade(d){
+  const t=cl((d+55)/110,0,1);
+  const c=Math.round(86+t*126);
+  return `rgb(${c},${c+5},${c+11})`;
+}
+function tapered(A,B,rA,rB){
+  const dx=B.x-A.x, dy=B.y-A.y, L=Math.hypot(dx,dy)||1, nx=-dy/L, ny=dx/L;
+  return `M${(A.x+nx*rA).toFixed(1)},${(A.y+ny*rA).toFixed(1)} L${(B.x+nx*rB).toFixed(1)},${(B.y+ny*rB).toFixed(1)}`+
+         ` L${(B.x-nx*rB).toFixed(1)},${(B.y-ny*rB).toFixed(1)} L${(A.x-nx*rA).toFixed(1)},${(A.y-ny*rA).toFixed(1)} Z`;
 }
 function figureSvg(id,t,ang){
   const fr=RIG[id]; if(!fr)return"";
-  const p=fullPose(lerpPose(fullPose(fr[0]),fullPose(fr[1]),t));
-  const J=skeleton(p);
-  const P={}; for(const k in J)P[k]=project(J[k],ang,p.zoom,p.oy);
+  const p=poseAt(fr,t), J=skeleton(p), P={};
+  for(const k in J)P[k]=project(J[k],ang,p.zoom,p.oy);
   const parts=[];
-  BONES.forEach(([a,b,w])=>{
-    const A=P[a],B=P[b],d=(A.d+B.d)/2;
-    const sw=w*(250/(250-d*0.55))*0.46*p.zoom;
-    parts.push({d,s:`<line class="bn" x1="${A.x.toFixed(1)}" y1="${A.y.toFixed(1)}" x2="${B.x.toFixed(1)}" y2="${B.y.toFixed(1)}" stroke-width="${sw.toFixed(2)}"/>`});
+  const OL='';
+  const blob=(pt,r,d)=>`<circle cx="${pt.x.toFixed(1)}" cy="${pt.y.toFixed(1)}" r="${(r*pt.k).toFixed(2)}" fill="${shade(d)}"${OL}/>`;
+  LIMBS.forEach(([a,b,rA,rB])=>{
+    const A=P[a],B=P[b],d=(A.d+B.d)/2,f=shade(d);
+    parts.push({d,s:`<path d="${tapered(A,B,rA*A.k,rB*B.k)}" fill="${f}"${OL}/>`+blob(A,rA,d)+blob(B,rB,d)});
   });
-  const H=P.head, hr=9*(250/(250-H.d*0.55))*0.46*p.zoom;
-  parts.push({d:H.d,s:`<circle class="hd" cx="${H.x.toFixed(1)}" cy="${H.y.toFixed(1)}" r="${hr.toFixed(2)}"/>`});
-  // kettlebell rides in the working hand(s)
-  const mode=p.bell, hands=mode==="R"?[P.handR]:mode==="L"?[P.handL]:[P.handL,P.handR];
-  const bx=hands.reduce((s,h)=>s+h.x,0)/hands.length;
-  const by=hands.reduce((s,h)=>s+h.y,0)/hands.length;
-  const bd=hands.reduce((s,h)=>s+h.d,0)/hands.length;
-  const br=6.4*(250/(250-bd*0.55))*0.46*p.zoom;
-  parts.push({d:bd+1,s:`<g class="bell"><circle cx="${bx.toFixed(1)}" cy="${(by+br*0.5).toFixed(1)}" r="${br.toFixed(2)}"/>`+
-    `<path d="M${(bx-br*0.7).toFixed(1)} ${(by+br*0.1).toFixed(1)} q${(br*0.7).toFixed(1)} ${(-br*0.9).toFixed(1)} ${(br*1.4).toFixed(1)} 0" stroke-width="${(br*0.42).toFixed(2)}"/></g>`});
-  parts.sort((a,b)=>a.d-b.d);                    // draw far bones first
+  parts.push({d:P.shoL.d,s:blob(P.shoL,5.2,P.shoL.d)});
+  parts.push({d:P.shoR.d,s:blob(P.shoR,5.2,P.shoR.d)});
+  parts.push({d:P.wriL.d,s:blob(P.wriL,3.0,P.wriL.d)});
+  parts.push({d:P.wriR.d,s:blob(P.wriR,3.0,P.wriR.d)});
+  parts.push({d:P.head.d,s:`<ellipse cx="${P.head.x.toFixed(1)}" cy="${P.head.y.toFixed(1)}" rx="${(6.8*P.head.k).toFixed(2)}" ry="${(8.4*P.head.k).toFixed(2)}" fill="${shade(P.head.d)}"${OL}/>`});
+  const mode=p.bell, hands=mode==="R"?[P.wriR]:mode==="L"?[P.wriL]:[P.wriL,P.wriR];
+  const bx=hands.reduce((s,h)=>s+h.x,0)/hands.length, by=hands.reduce((s,h)=>s+h.y,0)/hands.length;
+  const bd=hands.reduce((s,h)=>s+h.d,0)/hands.length, bk=hands.reduce((s,h)=>s+h.k,0)/hands.length;
+  const br=6.6*bk;
+  parts.push({d:bd+2,s:`<g class="bell"><circle cx="${bx.toFixed(1)}" cy="${(by+br*0.55).toFixed(1)}" r="${br.toFixed(2)}"/>`+
+    `<path d="M${(bx-br*0.66).toFixed(1)} ${(by+br*0.1).toFixed(1)} q${(br*0.66).toFixed(1)} ${(-br*0.95).toFixed(1)} ${(br*1.32).toFixed(1)} 0" stroke-width="${(br*0.4).toFixed(2)}"/></g>`});
+  parts.sort((a,b)=>a.d-b.d);
   const floor=p.oy?"":`<ellipse class="gnd" cx="50" cy="97" rx="26" ry="3.4"/>`;
-  return floor+parts.map(p=>p.s).join("");
+  return floor+parts.map(x=>x.s).join("");
 }
 
-/* animation loop: rep phase + slowly orbiting camera, draggable */
-let repT=0, camA=22, camDrag=0, dragging=false, lastTs=0, poseEx=null;
+let repT=0, camA=34, camDrag=0, dragging=false, dragX=0;
 function poseSvg(id){
-  poseEx=id;
   const labs=REP_LABELS[id]||["",""];
   return `<div class="pose-wrap" id="poseWrap" data-ex="${id}" data-labels="${labs.join("|")}">
     <svg class="pose" id="poseSvg" viewBox="0 0 100 100">${figureSvg(id,0,camA*D)}</svg>
@@ -1448,30 +1497,27 @@ function poseSvg(id){
   </div>`;
 }
 function paintFrames(){
-  const svg=el("poseSvg"); if(!svg)return;
-  const id=el("poseWrap")?.dataset.ex; if(!id||!RIG[id])return;
+  const svg=el("poseSvg"), wrap=el("poseWrap"); if(!svg||!wrap)return;
+  const id=wrap.dataset.ex; if(!RIG[id])return;
   svg.innerHTML=figureSvg(id,repT,(camA+camDrag)*D);
-  const labs=(el("poseWrap").dataset.labels||"").split("|");
+  const labs=(wrap.dataset.labels||"").split("|");
   const step=el("poseStep");
   if(step)step.textContent=repT<0.5?labs[0]:labs[1];
 }
 function poseTick(ts){
   requestAnimationFrame(poseTick);
   const wrap=el("poseWrap"); if(!wrap)return;
-  lastTs=ts;
-  const phase=(ts%2600)/2600;                    // ~2.6s per rep
-  repT=0.5-0.5*Math.cos(phase*2*Math.PI);        // ease down and back
-  const base=VIEW[wrap.dataset.ex]??34;
-  camA=base+30*Math.sin(ts/4300);                // sweep three-quarter → side
+  const phase=(ts%3000)/3000;                      // ~3s per rep, unhurried
+  repT=0.5-0.5*Math.cos(phase*2*Math.PI);
+  camA=(VIEW[wrap.dataset.ex]??48)+20*Math.sin(ts/4600);
   paintFrames();
 }
 requestAnimationFrame(poseTick);
-/* drag to look around */
 document.addEventListener("pointerdown",e=>{
   if(!e.target.closest("#poseWrap"))return;
-  dragging=true; e.target.setPointerCapture?.(e.pointerId); poseTick._x=e.clientX;
+  dragging=true; dragX=e.clientX;
 });
-document.addEventListener("pointermove",e=>{if(dragging){camDrag+=(e.clientX-poseTick._x)*0.6;poseTick._x=e.clientX;}});
+document.addEventListener("pointermove",e=>{if(dragging){camDrag+=(e.clientX-dragX)*0.6;dragX=e.clientX;}});
 document.addEventListener("pointerup",()=>{dragging=false});
 
 /* muscle label → regions on the body diagram */
