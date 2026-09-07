@@ -267,6 +267,19 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
 .card-fold.open{grid-template-rows:1fr}
 .card-fold>.fold-in{overflow:hidden;min-height:0}
 
+.info-btn{flex:0 0 auto;width:22px;height:22px;border-radius:50%;background:var(--card-2);
+  border:1px solid var(--line);color:var(--text-3);font-size:11px;font-weight:800;line-height:1;
+  cursor:pointer;display:grid;place-items:center;transition:all .18s var(--ease);font-style:italic;
+  font-family:Georgia,serif}
+.info-btn:hover{border-color:var(--accent-line);color:var(--accent);background:var(--accent-soft)}
+.modal-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch}
+.modal-foot{padding:0 22px 22px}
+.info-row{padding:14px 0;border-top:1px solid var(--line)}
+.info-row:first-child{border-top:none;padding-top:2px}
+.info-n{font-size:14.5px;font-weight:700}
+.info-m{font-size:11.5px;font-weight:700;color:var(--accent);margin-top:5px;line-height:1.5}
+.info-d{font-size:12.5px;color:var(--text-3);line-height:1.65;margin-top:7px;font-weight:500}
+
 /* kettlebell circuit timer */
 .kb-timer{text-align:center;padding:4px 0 2px}
 .kb-phase{font-size:10.5px;font-weight:800;letter-spacing:.17em;text-transform:uppercase;
@@ -476,7 +489,8 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
 .modal{position:fixed;inset:0;z-index:120;background:rgba(4,5,7,.72);backdrop-filter:blur(8px);
   -webkit-backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto}
 .modal-box{background:var(--card);border:1px solid var(--line);border-radius:var(--r-lg);
-  width:100%;max-width:400px;box-shadow:var(--shadow-2);margin:auto}
+  width:100%;max-width:400px;box-shadow:var(--shadow-2);margin:auto;
+  max-height:calc(100dvh - 40px);display:flex;flex-direction:column}
 .modal-head{padding:22px 22px 0}
 .modal-head h3{font-size:19px;font-weight:800;letter-spacing:-.02em}
 .modal-head p{font-size:13px;color:var(--text-3);margin-top:8px;line-height:1.6;font-weight:500}
@@ -597,6 +611,17 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
   </div>
 </div>
 
+<div class="modal hidden" id="kbInfoModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>What it works</h3>
+      <p>Six moves chosen to cover the whole body in 20 minutes — here's the job each one does.</p>
+    </div>
+    <div class="modal-body modal-scroll" id="kbInfoBody"></div>
+    <div class="modal-foot"><button class="btn btn-ghost btn-block" id="kbInfoClose">Close</button></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 <input type="file" accept="image/*" id="photoInput1" hidden>
 <input type="file" accept="image/*" id="photoInput2" hidden>
@@ -662,14 +687,26 @@ const DEFAULT_SESSIONS=[
    3 rounds × 6 moves, 40 sec work / 20 sec rest, 1 min between rounds. */
 const KB_MINUTES=20;
 const KB_ROUNDS=3, KB_WORK=40, KB_REST=20, KB_ROUND_REST=90;
-const KB_VIDEO_DEFAULT="https://www.youtube.com/results?search_query=20+minute+full+body+kettlebell+workout";
+const KB_VIDEO_DEFAULT="https://www.youtube.com/watch?v=ptdB52ggDvo";
 const KETTLEBELL=[
-  {id:"kb_swing", name:"Kettlebell swing", sets:"", reps:"40 sec", note:"hips not arms — snap and stand tall"},
-  {id:"kb_squat", name:"Goblet squat",     sets:"", reps:"40 sec", note:"bell at chest, elbows inside knees"},
-  {id:"kb_press", name:"Single-arm press", sets:"", reps:"40 sec", note:"20 sec each side, ribs down"},
-  {id:"kb_row",   name:"Bent-over row",    sets:"", reps:"40 sec", note:"20 sec each side, flat back"},
-  {id:"kb_lunge", name:"Reverse lunge",    sets:"", reps:"40 sec", note:"alternating, bell at chest"},
-  {id:"kb_twist", name:"Russian twist",    sets:"", reps:"40 sec", note:"chest up, rotate through the ribs"},
+  {id:"kb_swing", name:"Kettlebell swing", sets:"", reps:"40 sec", note:"hips not arms — snap and stand tall",
+   works:"Glutes · Hamstrings · Lower back · Core · Grip",
+   about:"A hip-hinge power move. The bell is thrown forward by snapping the hips, not lifted with the arms, so it trains the whole posterior chain and doubles as conditioning."},
+  {id:"kb_squat", name:"Goblet squat",     sets:"", reps:"40 sec", note:"bell at chest, elbows inside knees",
+   works:"Quads · Glutes · Inner thigh · Upper back · Core",
+   about:"Holding the bell at your chest forces the upper back and core to brace while the legs do the work, which also keeps your squat upright and opens the hips."},
+  {id:"kb_press", name:"Single-arm press", sets:"", reps:"40 sec", note:"20 sec each side, ribs down",
+   works:"Shoulders · Triceps · Upper chest · Obliques",
+   about:"Pressing on one side only means your obliques and deep core have to stop you leaning — so it builds shoulders and anti-tilt core strength at the same time."},
+  {id:"kb_row",   name:"Bent-over row",    sets:"", reps:"40 sec", note:"20 sec each side, flat back",
+   works:"Lats · Mid-back · Rear delts · Biceps · Spinal erectors",
+   about:"The pulling half of the circuit. Your back and biceps move the weight while the hinged position holds the hamstrings and lower back under tension throughout."},
+  {id:"kb_lunge", name:"Reverse lunge",    sets:"", reps:"40 sec", note:"alternating, bell at chest",
+   works:"Quads · Glutes · Hamstrings · Hip flexors · Balance",
+   about:"Single-leg work, so each side is loaded on its own and the smaller hip stabilisers have to keep you steady. Stepping back is easier on the knees than lunging forward."},
+  {id:"kb_twist", name:"Russian twist",    sets:"", reps:"40 sec", note:"chest up, rotate through the ribs",
+   works:"Obliques · Abs · Deep core",
+   about:"Rotation is the one direction the rest of the circuit misses. Turn through the ribs rather than swinging the arms, and keep your chest tall the whole set."},
 ];
 
 /* 3 rounds × (6×40s work + 5×20s rest) + 2×90s round breaks = 1200s */
@@ -959,11 +996,12 @@ function viewSummary(){
 }
 
 /* ── FITNESS ── */
-function foldHead(id,title,meta,metaOn){
+function foldHead(id,title,meta,metaOn,extra){
   const open=!collapsed[id];
   return `<div class="card-head fold${open?" open":""}" data-collapse="${id}">
     <h2>${title}</h2>
     <span class="card-meta${metaOn?" on":""}" id="${id}Badge">${meta}</span>
+    ${extra||""}
     <svg class="cv" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
   </div>`;
 }
@@ -1042,7 +1080,8 @@ function viewFitness(){
 
     <div class="stack">
       <section class="card">
-        ${foldHead("kb","Kettlebell · 20 min",kbDone+"/"+KETTLEBELL.length,kbDone===KETTLEBELL.length)}
+        ${foldHead("kb","Kettlebell · 20 min",kbDone+"/"+KETTLEBELL.length,kbDone===KETTLEBELL.length,
+          `<button class="info-btn" id="kbInfo" title="What each move works" aria-label="What each move works">i</button>`)}
         ${foldBody("kb",kbInner)}
       </section>
     </div>
@@ -1108,6 +1147,17 @@ function kbToggleLabel(st){
   if(kbTimer.running)return"Pause";
   return st.elapsed>0?"Resume":"Start";
 }
+function openKbInfo(){
+  el("kbInfoBody").innerHTML=KETTLEBELL.map(k=>`
+    <div class="info-row">
+      <div class="info-n">${esc(k.name)}</div>
+      <div class="info-m">${esc(k.works)}</div>
+      <div class="info-d">${esc(k.about)}</div>
+    </div>`).join("");
+  el("kbInfoModal").classList.remove("hidden");
+}
+function closeKbInfo(){el("kbInfoModal").classList.add("hidden")}
+
 function kbElapsed(){return kbTimer.running? kbTimer.base+(Date.now()-kbTimer.startedAt) : kbTimer.base}
 function fmtMS(ms){
   const t=Math.max(0,Math.ceil(ms/1000));
@@ -1464,6 +1514,7 @@ function wire(){
     const b=el("kbToggle");if(b){b.textContent="Start";b.className="btn btn-accent"}
     kbPaint();
   });
+  el("kbInfo")?.addEventListener("click",e=>{e.stopPropagation();openKbInfo()});
   el("kbEditUrl")?.addEventListener("click",()=>{kbEditing=true;render()});
   el("kbSaveUrl")?.addEventListener("click",()=>{
     const v=el("kbUrl").value.trim();
@@ -1712,6 +1763,10 @@ function openChallengeSetup(){
   el("chTarget").value=DEF_TARGET;
   el("challengeModal").classList.remove("hidden");
 }
+el("kbInfoClose").addEventListener("click",closeKbInfo);
+el("kbInfoModal").addEventListener("click",e=>{if(e.target===el("kbInfoModal"))closeKbInfo()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeKbInfo()});
+
 el("chSave").addEventListener("click",()=>{
   const s=el("chStart").value,t=el("chTarget").value;
   if(!s||!t){toast("Pick both dates");return}
