@@ -342,8 +342,10 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
 .focus-next{font-size:12.5px;font-weight:600;color:var(--text-3);margin-top:16px}
 .focus-foot{flex:0 0 auto}
 .mv-strip{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin-bottom:14px}
-.mv-chip{font-size:10px;font-weight:700;padding:4px 9px;border-radius:var(--r-full);
-  background:var(--card-2);border:1px solid var(--line);color:var(--text-3);transition:all .25s var(--ease)}
+.mv-chip{font-size:10px;font-weight:700;padding:5px 10px;border-radius:var(--r-full);cursor:pointer;
+  background:var(--card-2);border:1px solid var(--line);color:var(--text-3);transition:all .2s var(--ease)}
+.mv-chip:hover{border-color:var(--line-2);color:var(--text-2)}
+.mv-chip:active{transform:scale(.95)}
 .mv-chip.did{color:var(--text-2);border-color:var(--line-2)}
 .mv-chip.now{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
 .focus.rest .mv-chip.now{background:rgba(139,155,255,.12);border-color:rgba(139,155,255,.32);color:var(--night)}
@@ -377,6 +379,9 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
 .kb-timer.rest #kbSegFill{background:var(--night)}
 .kb-timer.done .kb-time,.kb-timer.done .kb-ex{color:var(--accent)}
 .kb-ctl{display:flex;gap:9px;margin-top:16px}
+.kb-ctl .ctl-ico{flex:0 0 auto;padding:12px 13px;display:grid;place-items:center}
+.kb-ctl .ctl-ico svg{width:17px;height:17px;stroke:currentColor;stroke-width:2.2;fill:none;
+  stroke-linecap:round;stroke-linejoin:round}
 .kb-ctl .btn{flex:1}
 .kb-note{font-size:12.5px;color:var(--text-3);font-weight:500;line-height:1.6;margin-top:2px}
 .kb-video{display:flex;align-items:center;gap:9px;margin-top:12px}
@@ -861,6 +866,7 @@ const KB_SEGS=(()=>{
   return out;
 })();
 const KB_TOTAL=KB_SEGS.reduce((a,s)=>a+s.secs,0);
+const KB_STARTS=(()=>{let acc=0;return KB_SEGS.map(s=>{const t=acc;acc+=s.secs;return t})})();
 const KB_LABEL=Math.round(KB_TOTAL/60)+" min";
 
 const DEFAULT_ABS=[
@@ -1239,10 +1245,10 @@ function kbFocusView(){
   // during a rest we teach the move that is coming up
   const show=st.done?null:(st.seg.type==="work"?st.seg.ex:st.seg.next);
   const roundOf=st.done?KB_ROUNDS:st.seg.round;
-  const chips=KETTLEBELL.map(k=>{
+  const chips=KETTLEBELL.map((k,i)=>{
     const cur=show&&k.id===show.id;
     const did=!!dayState.checked[k.id];
-    return `<span class="mv-chip${cur?" now":""}${did&&!cur?" did":""}">${esc(k.name)}</span>`;
+    return `<button class="mv-chip${cur?" now":""}${did&&!cur?" did":""}" data-move="${i}">${esc(k.name)}</button>`;
   }).join("");
 
   return `
@@ -1272,10 +1278,7 @@ function kbFocusView(){
         <span class="kb-total-of">round ${roundOf} of ${KB_ROUNDS} · of ${fmtMS(KB_TOTAL*1000)}</span>
       </div>
       <div class="track"><div class="fill" id="kbFill" style="width:${Math.min(100,st.elapsed/KB_TOTAL*100)}%"></div></div>
-      <div class="kb-ctl">
-        <button class="btn ${kbTimer.running?"btn-ghost":"btn-accent"}" id="kbToggle">${kbToggleLabel(st)}</button>
-        <button class="btn btn-ghost" id="kbReset">Reset</button>
-      </div>
+      ${kbCtlHtml(st)}
     </div>
   </section>`;
 }
@@ -1294,10 +1297,7 @@ function kbTimerHtml(){
       <span class="kb-total-of">of ${fmtMS(KB_TOTAL*1000)}</span>
     </div>
     <div class="track"><div class="fill" id="kbFill" style="width:${Math.min(100,st.elapsed/KB_TOTAL*100)}%"></div></div>
-    <div class="kb-ctl">
-      <button class="btn ${kbTimer.running?"btn-ghost":"btn-accent"}" id="kbToggle">${kbToggleLabel(st)}</button>
-      <button class="btn btn-ghost" id="kbReset">Reset</button>
-    </div>
+    ${kbCtlHtml(st)}
   </div>`;
 }
 /* where we are in the circuit, derived from elapsed time (no drift) */
@@ -1517,6 +1517,34 @@ function openKbInfo(){
 }
 function closeKbInfo(){el("kbInfoModal").classList.add("hidden")}
 
+/* jump the clock to the head of a segment — skipping never auto-ticks a move */
+function kbGoto(i){
+  i=Math.max(0,Math.min(KB_SEGS.length-1,i));
+  kbTimer.base=KB_STARTS[i]*1000;
+  if(kbTimer.running)kbTimer.startedAt=Date.now();
+  kbLastSeg=i;
+  render();
+}
+function kbSkip(n){const st=kbState();kbGoto((st.done?KB_SEGS.length-1:st.i)+n)}
+/* jump to a chosen move within the round you are already in */
+function kbGotoMove(idx){
+  const st=kbState();
+  const round=st.done?KB_ROUNDS:st.seg.round;
+  const id=KETTLEBELL[idx]?.id;
+  let t=KB_SEGS.findIndex(sg=>sg.type==="work"&&sg.round===round&&sg.ex.id===id);
+  if(t<0)t=KB_SEGS.findIndex(sg=>sg.type==="work"&&sg.ex.id===id);
+  if(t>=0)kbGoto(t);
+}
+function kbCtlHtml(st){
+  return `<div class="kb-ctl">
+    <button class="btn btn-ghost ctl-ico" id="kbSkipPrev" title="Previous" aria-label="Previous">
+      <svg viewBox="0 0 24 24"><polyline points="11 17 6 12 11 7"/><polyline points="18 17 13 12 18 7"/></svg></button>
+    <button class="btn ${kbTimer.running?"btn-ghost":"btn-accent"}" id="kbToggle" style="flex:2">${kbToggleLabel(st)}</button>
+    <button class="btn btn-ghost ctl-ico" id="kbSkipNext" title="Skip" aria-label="Skip">
+      <svg viewBox="0 0 24 24"><polyline points="13 7 18 12 13 17"/><polyline points="6 7 11 12 6 17"/></svg></button>
+  </div>
+  <button class="btn btn-ghost btn-block btn-sm" id="kbReset" style="margin-top:9px">Reset circuit</button>`;
+}
 function kbElapsed(){return kbTimer.running? kbTimer.base+(Date.now()-kbTimer.startedAt) : kbTimer.base}
 function fmtMS(ms){
   const t=Math.max(0,Math.ceil(ms/1000));
@@ -1875,6 +1903,9 @@ function wire(){
     }
   });
   el("kbExit")?.addEventListener("click",()=>{kbFocus=false;render()});
+  el("kbSkipPrev")?.addEventListener("click",()=>kbSkip(-1));
+  el("kbSkipNext")?.addEventListener("click",()=>kbSkip(1));
+  document.querySelectorAll("[data-move]").forEach(n=>n.addEventListener("click",()=>kbGotoMove(+n.dataset.move)));
   el("kbReset")?.addEventListener("click",()=>{
     kbTimer={running:false,base:0,startedAt:0};kbFocus=false;kbLastSeg=-1;kbFocus=false;render();
   });
