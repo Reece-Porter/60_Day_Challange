@@ -257,6 +257,31 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
 .toggle.on{background:var(--accent-soft);border-color:var(--accent-line);color:var(--accent)}
 .toggle:active{transform:scale(.96)}
 
+/* collapsible cards */
+.card-head.fold{cursor:pointer;user-select:none;transition:background .18s var(--ease)}
+.card-head.fold:hover{background:var(--card-2)}
+.card-head .cv{width:15px;height:15px;stroke:var(--text-3);stroke-width:2.4;fill:none;stroke-linecap:round;
+  stroke-linejoin:round;flex:0 0 auto;transition:transform .28s var(--ease)}
+.card-head.open .cv{transform:rotate(180deg)}
+.card-fold{display:grid;grid-template-rows:0fr;transition:grid-template-rows .28s var(--ease)}
+.card-fold.open{grid-template-rows:1fr}
+.card-fold>.fold-in{overflow:hidden;min-height:0}
+
+/* kettlebell timer */
+.kb-timer{text-align:center;padding:6px 0 2px}
+.kb-time{font-size:clamp(52px,17vw,74px);font-weight:800;letter-spacing:-.055em;line-height:1;
+  font-variant-numeric:tabular-nums;transition:color .3s var(--ease)}
+.kb-timer.done .kb-time{color:var(--accent)}
+.kb-of{font-size:12px;font-weight:700;color:var(--text-3);margin-top:7px;letter-spacing:.06em}
+.kb-ctl{display:flex;gap:9px;margin-top:16px}
+.kb-ctl .btn{flex:1}
+.kb-note{font-size:12.5px;color:var(--text-3);font-weight:500;line-height:1.6;margin-top:2px}
+.kb-video{display:flex;align-items:center;gap:9px;margin-top:12px}
+.kb-video .btn{flex:1}
+.link-sm{font-size:12px;font-weight:700;color:var(--text-3);background:none;border:none;cursor:pointer;
+  padding:6px 4px;transition:color .18s var(--ease);white-space:nowrap}
+.link-sm:hover{color:var(--accent)}
+
 .today-line{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:9px 0;
   border-top:1px solid var(--line)}
 .today-line:first-child{border-top:none;padding-top:0}
@@ -621,6 +646,19 @@ const DEFAULT_SESSIONS=[
     {id:"rest_recover",name:"Easy movement + recover",sets:"",reps:"rest days build the gains"},
   ]},
 ];
+/* 20-minute at-home full body kettlebell circuit:
+   3 rounds × 6 moves, 40 sec work / 20 sec rest, 1 min between rounds. */
+const KB_MINUTES=20;
+const KB_VIDEO_DEFAULT="https://www.youtube.com/results?search_query=20+minute+full+body+kettlebell+workout";
+const KETTLEBELL=[
+  {id:"kb_swing", name:"Kettlebell swing", sets:"", reps:"40 sec", note:"hips not arms — snap and stand tall"},
+  {id:"kb_squat", name:"Goblet squat",     sets:"", reps:"40 sec", note:"bell at chest, elbows inside knees"},
+  {id:"kb_press", name:"Single-arm press", sets:"", reps:"40 sec", note:"20 sec each side, ribs down"},
+  {id:"kb_row",   name:"Bent-over row",    sets:"", reps:"40 sec", note:"20 sec each side, flat back"},
+  {id:"kb_lunge", name:"Reverse lunge",    sets:"", reps:"40 sec", note:"alternating, bell at chest"},
+  {id:"kb_twist", name:"Russian twist",    sets:"", reps:"40 sec", note:"chest up, rotate through the ribs"},
+];
+
 const DEFAULT_ABS=[
   {id:"ab_leg",name:"Lying leg raises",sets:"3",reps:"12–15",note:"lower abs"},
   {id:"ab_rev",name:"Reverse crunch",sets:"3",reps:"15",note:"lower abs"},
@@ -670,6 +708,9 @@ let customSessions=[...DEFAULT_SESSIONS];
 let customAbs=[...DEFAULT_ABS];
 let photoCache={}, day1PhotoLabel="Before";
 let activeTab="today", animateNext=true;
+let collapsed={train:false,abs:false,kb:true};
+let kbVideo=KB_VIDEO_DEFAULT, kbEditing=false;
+let kbTimer={running:false,base:0,startedAt:0};   // base = ms banked while paused
 let editingSession=null, openSession=null;
 
 const BEFORE_KEY="__day1__";   // unchanged key — keeps existing before-photos
@@ -890,6 +931,18 @@ function viewSummary(){
 }
 
 /* ── FITNESS ── */
+function foldHead(id,title,meta,metaOn){
+  const open=!collapsed[id];
+  return `<div class="card-head fold${open?" open":""}" data-collapse="${id}">
+    <h2>${title}</h2>
+    <span class="card-meta${metaOn?" on":""}" id="${id}Badge">${meta}</span>
+    <svg class="cv" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+  </div>`;
+}
+function foldBody(id,inner){
+  return `<div class="card-fold${collapsed[id]?"":" open"}" id="fold-${id}"><div class="fold-in">${inner}</div></div>`;
+}
+
 function viewFitness(){
   const c=todayCounts(), pct=c.total?Math.round(c.done/c.total*100):0;
   const plan=planFor(viewDate);
@@ -897,8 +950,9 @@ function viewFitness(){
   const trainDone=sess?sess.items.filter(i=>dayState.checked[i.id]).length:0;
   const absDone=customAbs.filter(a=>dayState.checked[a.id]).length;
   const absShown=absOn(viewDate,dayState);
+  const kbDone=KETTLEBELL.filter(k=>dayState.checked[k.id]).length;
 
-  const trainBody = customSessions.length===0
+  const trainInner = customSessions.length===0
     ? `<div class="empty"><div class="t">No sessions yet</div>
        <div class="s">Build your training sessions in Settings, then assign them to days in Plan.</div>
        <button class="btn btn-ghost" id="goSettings" style="margin-top:16px">Open settings</button></div>`
@@ -907,6 +961,34 @@ function viewFitness(){
          <div class="hint">${dayState.session?"Switched manually — tap any to change":"From your "+(onRotation()?"rotation":"weekly plan")}</div>
        </div>
        ${sess?`<div class="card-body flush" style="border-top:1px solid var(--line)">${sess.items.map(exTask).join("")}</div>`:""}`;
+
+  const absInner = absShown
+    ? `<div class="card-body flush">${customAbs.map(exTask).join("")}</div>
+       ${!plan.abs?`<div class="card-body" style="border-top:1px solid var(--line)"><button class="btn btn-ghost btn-block btn-sm" id="absOff">Remove from today</button></div>`:""}`
+    : `<div class="card-body"><div class="empty" style="padding:10px 0 4px">
+         <div class="t">Not scheduled today</div>
+         <div class="s">Recovery is part of the plan. Add the session anyway if you want the extra work.</div>
+         <button class="btn btn-ghost" id="absAdd" style="margin-top:16px">Add abs today</button>
+       </div></div>`;
+
+  const kbInner = `
+    <div class="card-body">
+      ${kbTimerHtml()}
+    </div>
+    <div class="card-body" style="border-top:1px solid var(--line);padding-bottom:12px">
+      <div class="kb-note">3 rounds · 6 moves · 40 sec work, 20 sec rest. One minute back between rounds.</div>
+      ${kbEditing
+        ? `<div class="kb-video" style="gap:8px">
+             <input class="input" id="kbUrl" value="${esc(kbVideo)}" placeholder="Paste a video URL">
+             <button class="btn btn-accent btn-sm" id="kbSaveUrl">Save</button>
+           </div>`
+        : `<div class="kb-video">
+             <a class="btn btn-ghost btn-sm" href="${esc(kbVideo)}" target="_blank" rel="noopener"
+                style="text-align:center;text-decoration:none">▶ Watch how to do it</a>
+             <button class="link-sm" id="kbEditUrl">Change</button>
+           </div>`}
+    </div>
+    <div class="card-body flush" style="border-top:1px solid var(--line)">${KETTLEBELL.map(exTask).join("")}</div>`;
 
   return `
   ${dateNavHtml()}
@@ -918,27 +1000,60 @@ function viewFitness(){
   </section>
 
   <div class="grid2">
-    <section class="card">
-      <div class="card-head"><h2>Training</h2>
-        <span class="card-meta${sess&&trainDone===sess.items.length?" on":""}" id="trainBadge">${sess?trainDone+"/"+sess.items.length:""}</span></div>
-      ${trainBody}
-    </section>
+    <div class="stack">
+      <section class="card">
+        ${foldHead("train","Training",sess?trainDone+"/"+sess.items.length:"",sess&&trainDone===sess.items.length)}
+        ${foldBody("train",trainInner)}
+      </section>
 
-    <section class="card">
-      <div class="card-head"><h2>Abs</h2>
-        <span class="card-meta${absShown&&absDone===customAbs.length?" on":""}" id="absBadge">${absShown?absDone+"/"+customAbs.length:"rest"}</span></div>
-      ${absShown?`
-        <div class="card-body flush">${customAbs.map(exTask).join("")}</div>
-        ${!plan.abs?`<div class="card-body" style="border-top:1px solid var(--line)"><button class="btn btn-ghost btn-block btn-sm" id="absOff">Remove from today</button></div>`:""}
-      `:`<div class="card-body"><div class="empty" style="padding:10px 0 4px">
-          <div class="t">Not scheduled today</div>
-          <div class="s">Recovery is part of the plan. Add the session anyway if you want the extra work.</div>
-          <button class="btn btn-ghost" id="absAdd" style="margin-top:16px">Add abs today</button>
-        </div></div>`}
-    </section>
+      <section class="card">
+        ${foldHead("abs","Abs",absShown?absDone+"/"+customAbs.length:"rest",absShown&&absDone===customAbs.length)}
+        ${foldBody("abs",absInner)}
+      </section>
+    </div>
+
+    <div class="stack">
+      <section class="card">
+        ${foldHead("kb","Kettlebell · 20 min",kbDone+"/"+KETTLEBELL.length,kbDone===KETTLEBELL.length)}
+        ${foldBody("kb",kbInner)}
+      </section>
+    </div>
   </div>
 
   <button class="btn btn-ghost btn-block" id="resetBtn">Clear this day</button>`;
+}
+
+function kbTimerHtml(){
+  const ms=kbElapsed(), total=KB_MINUTES*60000;
+  const done=ms>=total;
+  return `<div class="kb-timer${done?" done":""}" id="kbTimer">
+    <div class="kb-time" id="kbTime">${fmtMS(ms)}</div>
+    <div class="kb-of" id="kbOf">${done?"TIME — well done":"OF "+fmtMS(total)}</div>
+    <div class="track" style="margin-top:14px"><div class="fill" id="kbFill" style="width:${Math.min(100,ms/total*100)}%"></div></div>
+    <div class="kb-ctl">
+      <button class="btn ${kbTimer.running?"btn-ghost":"btn-accent"}" id="kbToggle">${kbTimer.running?"Pause":(ms?"Resume":"Start")}</button>
+      <button class="btn btn-ghost" id="kbReset">Reset</button>
+    </div>
+  </div>`;
+}
+function kbElapsed(){return kbTimer.running? kbTimer.base+(Date.now()-kbTimer.startedAt) : kbTimer.base}
+function fmtMS(ms){
+  const t=Math.max(0,Math.round(ms/1000));
+  return String(Math.floor(t/60)).padStart(2,"0")+":"+String(t%60).padStart(2,"0");
+}
+function kbPaint(){
+  const t=el("kbTime");if(!t)return;
+  const ms=kbElapsed(), total=KB_MINUTES*60000, done=ms>=total;
+  t.textContent=fmtMS(ms);
+  const f=el("kbFill");if(f)f.style.width=Math.min(100,ms/total*100)+"%";
+  const w=el("kbTimer");if(w)w.classList.toggle("done",done);
+  const o=el("kbOf");if(o)o.textContent=done?"TIME — well done":"OF "+fmtMS(total);
+  if(done&&kbTimer.running){kbStop();toast("20 minutes done");}
+}
+function kbStop(){
+  if(!kbTimer.running)return;
+  kbTimer.base=kbElapsed();kbTimer.running=false;
+  const b=el("kbToggle");if(b){b.textContent="Resume";b.className="btn btn-accent"}
 }
 
 function taskHtml(id,t,s){
@@ -1232,6 +1347,33 @@ function wire(){
   el("nextDay")&&(el("nextDay").disabled=viewKey>=realKey,el("nextDay").addEventListener("click",()=>changeDay(1)));
   el("resetBtn")?.addEventListener("click",resetDay);
   el("goSettings")?.addEventListener("click",()=>setTab("settings"));
+
+  // collapsible cards
+  document.querySelectorAll("[data-collapse]").forEach(h=>h.addEventListener("click",()=>{
+    const id=h.dataset.collapse, opening=!!collapsed[id];
+    collapsed[id]=!opening;
+    h.classList.toggle("open",opening);
+    el("fold-"+id)?.classList.toggle("open",opening);
+    save("collapsed",collapsed);
+  }));
+
+  // kettlebell timer
+  el("kbToggle")?.addEventListener("click",()=>{
+    if(kbTimer.running){kbStop()}
+    else{kbTimer.startedAt=Date.now();kbTimer.running=true;
+      const b=el("kbToggle");if(b){b.textContent="Pause";b.className="btn btn-ghost"}}
+  });
+  el("kbReset")?.addEventListener("click",()=>{
+    kbTimer={running:false,base:0,startedAt:0};
+    const b=el("kbToggle");if(b){b.textContent="Start";b.className="btn btn-accent"}
+    kbPaint();
+  });
+  el("kbEditUrl")?.addEventListener("click",()=>{kbEditing=true;render()});
+  el("kbSaveUrl")?.addEventListener("click",()=>{
+    const v=el("kbUrl").value.trim();
+    kbVideo=/^https?:\/\//i.test(v)?v:KB_VIDEO_DEFAULT;
+    kbEditing=false;save("kbVideo",kbVideo);render();toast("Video link saved");
+  });
   el("goFitness")?.addEventListener("click",()=>setTab("fitness"));
   el("absAdd")?.addEventListener("click",()=>{dayState.abs=true;persistDay();render()});
   el("absOff")?.addEventListener("click",()=>{dayState.abs=false;persistDay();render()});
@@ -1347,7 +1489,7 @@ function refreshProgress(){
   if(stx)stx.textContent=c.total===0?"Rest day":(pct===100?"Locked in":(c.total-c.done)+" left today");
 
   const sess=currentSession();
-  const t=el("trainBadge"),a=el("absBadge");
+  const t=el("trainBadge"),a=el("absBadge"),kb=el("kbBadge");
   const fp=el("fitPct"),ff=el("fitFill");
   if(fp)fp.textContent=c.total?c.done+" of "+c.total+" done":"Nothing scheduled";
   if(ff)ff.style.width=pct+"%";
@@ -1355,6 +1497,8 @@ function refreshProgress(){
     t.textContent=n+"/"+sess.items.length;t.classList.toggle("on",n===sess.items.length)}
   if(a&&absOn(viewDate,dayState)){const n=customAbs.filter(x=>dayState.checked[x.id]).length;
     a.textContent=n+"/"+customAbs.length;a.classList.toggle("on",n===customAbs.length)}
+  if(kb){const n=KETTLEBELL.filter(x=>dayState.checked[x.id]).length;
+    kb.textContent=n+"/"+KETTLEBELL.length;kb.classList.toggle("on",n===KETTLEBELL.length)}
 
   const strip=el("weekStrip");
   if(strip){strip.innerHTML=weekStripHtml();
@@ -1381,6 +1525,7 @@ function pickSession(k){
   if(dayState.session!==k){
     const keep={};
     customAbs.forEach(a=>{if(dayState.checked[a.id])keep[a.id]=true});
+    KETTLEBELL.forEach(k=>{if(dayState.checked[k.id])keep[k.id]=true});
     const s=sessById(k);if(s)s.items.forEach(i=>{if(dayState.checked[i.id])keep[i.id]=true});
     dayState.checked=keep;dayState.session=k;persistDay();
   }
@@ -1454,6 +1599,7 @@ function tickClock(){
   const h=Math.floor(r/36e5);r-=h*36e5;
   const m=Math.floor(r/6e4);r-=m*6e4;
   const s=Math.floor(r/1e3);
+  kbPaint();
   const c=el("clock");
   if(c)c.textContent=String(h).padStart(2,"0")+":"+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
 }
@@ -1512,6 +1658,8 @@ async function doSignOut(){
   scheduleMode="week";rotationStart=parseISO(DEF_START);
   customSessions=[...DEFAULT_SESSIONS];customAbs=[...DEFAULT_ABS];
   day1PhotoLabel="Before";editingSession=null;activeTab="today";syncNav();
+  collapsed={train:false,abs:false,kb:true};kbVideo=KB_VIDEO_DEFAULT;kbEditing=false;
+  kbTimer={running:false,base:0,startedAt:0};
   START=parseISO(DEF_START);TARGET=parseISO(DEF_TARGET);applyChallengeDates();
   el("shell").classList.add("hidden");el("navBar").classList.add("hidden");
   el("authScreen").style.display="flex";
@@ -1559,6 +1707,8 @@ onAuthStateChanged(auth,async user=>{
   else if(isNewUser)customSessions=[];
   const ca=await load("customAbs");if(ca&&ca.length)customAbs=ca;
   const d1l=await load("day1PhotoLabel");if(d1l)day1PhotoLabel=d1l;
+  const col=await load("collapsed");if(col)collapsed={...collapsed,...col};
+  const kv=await load("kbVideo");if(kv)kbVideo=kv;
 
   await loadDay();
   render();
