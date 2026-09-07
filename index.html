@@ -310,21 +310,22 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
 .focus-mid{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:6px;padding:12px 0}
 .focus-visual{display:flex;justify-content:center}
-.pose{width:148px;height:148px;display:block}
-.pose-wrap{text-align:center}
-.pose .frame{opacity:0;transition:opacity .1s linear}
-.pose .frame.on{opacity:1}
+.pose{width:158px;height:158px;display:block;touch-action:none;cursor:grab}
+.pose:active{cursor:grabbing}
+.pose-wrap{text-align:center;user-select:none}
+.pose .bn{stroke:var(--text-2);stroke-linecap:round;fill:none}
+.pose .hd{fill:var(--text-2)}
+.pose .gnd{fill:rgba(255,255,255,.045)}
+.pose .bell circle{fill:var(--accent)}
+.pose .bell path{fill:none;stroke:var(--accent);stroke-linecap:round}
+.focus.rest .pose .bell circle{fill:var(--night)}
+.focus.rest .pose .bell path{stroke:var(--night)}
 .pose-step{font-size:10.5px;font-weight:800;letter-spacing:.13em;text-transform:uppercase;
   color:var(--text-3);margin-top:2px}
 .focus.work .pose-step{color:var(--accent)}
 .focus.rest .pose-step{color:var(--night)}
-.pose .fig{fill:none;stroke:var(--text-2);stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
-.pose .hd{fill:var(--text-2)}
-.pose .gnd{stroke:var(--line-2);stroke-width:2.5;stroke-linecap:round}
-.pose .bell circle{fill:var(--accent)}
-.pose .bell path{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linecap:round}
-.focus.rest .pose .bell circle{fill:var(--night)}
-.focus.rest .pose .bell path{stroke:var(--night)}
+.pose-hint{font-size:9.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--text-3);opacity:.6;margin-top:3px}
 .focus-info{width:100%;text-align:center;min-width:0}
 .focus-ex{font-size:clamp(19px,5.5vw,26px);font-weight:800;letter-spacing:-.03em}
 .focus-time{font-size:clamp(62px,21vw,92px);font-weight:800;letter-spacing:-.06em;line-height:1;
@@ -351,11 +352,11 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
   .focus{padding:26px 30px}
   .focus-mid{flex-direction:row;gap:34px;align-items:center}
   .focus-visual{flex:0 0 auto}
-  .pose{width:226px;height:226px}
+  .pose{width:238px;height:238px}
   .focus-info{text-align:left;flex:1}
   .focus-cues{margin-left:0;margin-right:0}
 }
-@media(max-height:680px){.pose{width:112px;height:112px}.focus-cues{margin-top:10px}}
+@media(max-height:680px){.pose{width:118px;height:118px}.focus-cues{margin-top:10px}}
 
 /* kettlebell circuit timer */
 .kb-timer{text-align:center;padding:4px 0 2px}
@@ -1336,69 +1337,142 @@ function kbToggleLabel(st){
   if(kbTimer.running)return"Pause";
   return st.elapsed>0?"Resume":"Start";
 }
-/* Side-view poses. Each move is a sequence of frames covering the range of
-   motion, cycled on a loop so the figure demonstrates a full rep. */
-const BELL=(x,y,up)=>`<g class="bell"><circle cx="${x}" cy="${y}" r="5.5"/><path d="M${x-4.5} ${up?y-3:y+3} q4.5 ${up?-6:6} 9 0"/></g>`;
-const GND='<line class="gnd" x1="16" y1="92" x2="84" y2="92"/>';
-const HD=(x,y)=>`<circle class="hd" cx="${x}" cy="${y}" r="6"/>`;
-const L=d=>`<path class="fig" d="${d}"/>`;
+/* ── 3D exercise figure ──────────────────────────────────────────
+   A small articulated rig: poses are joint angles, interpolated over the
+   rep and projected to 2D each frame, so the movement can be watched from
+   any angle. No external 3D library, so nothing to fail at runtime. */
+const D=Math.PI/180;
+const rotX=(v,a)=>{const c=Math.cos(a),s=Math.sin(a);return{x:v.x,y:v.y*c-v.z*s,z:v.y*s+v.z*c}};
+const rotY=(v,a)=>{const c=Math.cos(a),s=Math.sin(a);return{x:v.x*c+v.z*s,y:v.y,z:-v.x*s+v.z*c}};
+const add=(p,d,k)=>({x:p.x+d.x*k,y:p.y+d.y*k,z:p.z+d.z*k});
+/* two-segment limb: a1 from straight-down, a2 bends the second segment */
+function chain(from,a1,a2,l1,l2,yaw){
+  const d1=rotY(rotX({x:0,y:-1,z:0},a1*D),yaw*D);
+  const mid=add(from,d1,l1);
+  const d2=rotY(rotX({x:0,y:-1,z:0},(a1+a2)*D),yaw*D);
+  return[mid,add(mid,d2,l2)];
+}
+const POSE_DEFAULTS={py:96,pz:0,hinge:0,twist:0,shL:0,shR:0,elL:0,elR:0,
+  thL:0,thR:0,knL:0,knR:0,armYawL:0,armYawR:0,legYawL:0,legYawR:0,zoom:1,oy:0,bell:"both"};
+function skeleton(p){
+  const J={};
+  J.pelvis={x:0,y:p.py,z:p.pz};
+  const sp=rotX({x:0,y:1,z:0},p.hinge*D);
+  J.chest=add(J.pelvis,sp,42);
+  J.head =add(J.chest,sp,26);
+  const side=rotY({x:1,y:0,z:0},p.twist*D);
+  J.shoL=add(J.chest,side,-16); J.shoR=add(J.chest,side,16);
+  J.hipL=add(J.pelvis,side,-9); J.hipR=add(J.pelvis,side,9);
+  [J.elbL,J.handL]=chain(J.shoL,p.shL,p.elL,26,24,p.twist+p.armYawL);
+  [J.elbR,J.handR]=chain(J.shoR,p.shR,p.elR,26,24,p.twist+p.armYawR);
+  [J.kneL,J.footL]=chain(J.hipL,p.thL,p.knL,44,44,p.legYawL);
+  [J.kneR,J.footR]=chain(J.hipR,p.thR,p.knR,44,44,p.legYawR);
+  return J;
+}
+const BONES=[["pelvis","chest",10],["chest","shoL",7],["chest","shoR",7],
+  ["shoL","elbL",6],["elbL","handL",5],["shoR","elbR",6],["elbR","handR",5],
+  ["pelvis","hipL",7],["pelvis","hipR",7],
+  ["hipL","kneL",9],["kneL","footL",7],["hipR","kneR",9],["kneR","footR",7]];
 
-const POSES={
-  kb_swing:[
-    {l:"Hinge back", s:GND+HD(26,40)+L("M31 44 L56 54")+L("M33 47 L45 68")+L("M56 54 L57 73 L54 90")+BELL(43,74,1)},
-    {l:"Drive tall", s:GND+HD(46,22)+L("M47 28 L50 58")+L("M47 36 L69 44")+L("M50 58 L48 90")+BELL(75,46,1)},
-  ],
-  kb_squat:[
-    {l:"Stand tall", s:GND+HD(44,20)+L("M45 26 L48 58")+L("M45 34 L38 40")+L("M48 58 L46 90")+BELL(34,42,1)},
-    {l:"Sit deep",   s:GND+HD(40,30)+L("M41 36 L46 60")+L("M42 42 L36 48")+L("M46 60 L62 68 L56 90")+BELL(32,50,1)},
-  ],
-  kb_floor:[
-    {l:"Elbow down", s:GND+HD(24,82)+L("M30 85 L58 85")+L("M58 85 L68 71 L79 88")+L("M42 84 L46 75")+BELL(47,70,0)},
-    {l:"Press up",   s:GND+HD(24,82)+L("M30 85 L58 85")+L("M58 85 L68 71 L79 88")+L("M42 84 L42 66")+BELL(42,60,0)},
-  ],
-  kb_row:[
-    {l:"Arm long",    s:GND+HD(28,36)+L("M32 41 L56 52")+L("M37 45 L42 65")+L("M56 52 L56 72 L59 90")+BELL(43,71,1)},
-    {l:"Pull to hip", s:GND+HD(28,36)+L("M32 41 L56 52")+L("M37 45 L46 56")+L("M56 52 L56 72 L59 90")+BELL(50,58,1)},
-  ],
-  kb_lunge:[
-    {l:"Stand",     s:GND+HD(46,20)+L("M47 26 L48 54")+L("M48 34 L40 40")+L("M48 54 L45 90")+L("M48 54 L53 90")+BELL(36,42,1)},
-    {l:"Step back", s:GND+HD(46,22)+L("M47 28 L48 54")+L("M48 36 L40 42")+L("M48 54 L38 70 L36 90")+L("M48 54 L64 70 L74 88")+BELL(36,44,1)},
-  ],
-  kb_press:[
-    {l:"Racked",     s:GND+HD(44,28)+L("M45 34 L47 60")+L("M45 38 L51 47")+L("M47 60 L42 90")+L("M47 60 L54 90")+BELL(53,41,0)},
-    {l:"Locked out", s:GND+HD(44,30)+L("M45 36 L47 60")+L("M45 39 L55 25")+L("M47 60 L42 90")+L("M47 60 L54 90")+BELL(58,18,0)},
-  ],
-  kb_curl:[
-    {l:"Arms long", s:GND+HD(46,24)+L("M47 30 L48 58")+L("M46 36 L49 53")+L("M48 58 L44 90")+L("M48 58 L54 90")+BELL(52,59,0)},
-    {l:"Curl up",   s:GND+HD(46,24)+L("M47 30 L48 58")+L("M46 36 L44 50 L55 45")+L("M48 58 L44 90")+L("M48 58 L54 90")+BELL(60,43,0)},
-  ],
-  kb_twist:[
-    {l:"Bell left",  s:GND+L("M43 77 L34 55")+HD(32,49)+L("M43 77 L61 71 L71 83")+L("M37 61 L28 66")+BELL(24,68,1)},
-    {l:"Bell right", s:GND+L("M43 77 L34 55")+HD(32,49)+L("M43 77 L61 71 L71 83")+L("M37 61 L52 63")+BELL(57,64,1)},
-  ],
+/* every move: two ends of its range of motion */
+const RIG={
+  kb_swing:[{hinge:58,py:84,thL:-6,thR:-6,knL:30,knR:30,shL:26,shR:26,elL:4,elR:4},
+            {hinge:4,py:96,thL:0,thR:0,knL:4,knR:4,shL:-84,shR:-84,elL:2,elR:2}],
+  kb_squat:[{hinge:8,py:96,thL:0,thR:0,knL:4,knR:4,shL:-28,shR:-28,elL:128,elR:128},
+            {hinge:32,py:60,thL:-50,thR:-50,knL:94,knR:94,shL:-28,shR:-28,elL:128,elR:128}],
+  kb_floor:[{hinge:86,py:20,zoom:1.32,oy:30,thL:-128,thR:-128,knL:88,knR:88,shL:180,shR:180,elL:-98,elR:-98},
+            {hinge:86,py:20,zoom:1.32,oy:30,thL:-128,thR:-128,knL:88,knR:88,shL:180,shR:180,elL:0,elR:0}],
+  kb_row:  [{hinge:68,py:88,thL:-6,thR:-6,knL:24,knR:24,shL:2,shR:2,elL:4,elR:4},
+            {hinge:68,py:88,thL:-6,thR:-6,knL:24,knR:24,shL:2,shR:2,elL:98,elR:98}],
+  kb_lunge:[{hinge:6,py:96,thL:0,thR:0,knL:4,knR:4,shL:-28,shR:-28,elL:130,elR:130},
+            {hinge:10,py:70,thL:-32,thR:34,knL:82,knR:96,shL:-28,shR:-28,elL:130,elR:130}],
+  kb_press:[{hinge:3,py:96,thL:0,thR:0,knL:4,knR:4,shL:2,shR:-18,elL:6,elR:148,bell:"R"},
+            {hinge:3,py:96,thL:0,thR:0,knL:4,knR:4,shL:2,shR:-174,elL:6,elR:4,bell:"R"}],
+  kb_curl: [{hinge:3,py:96,thL:0,thR:0,knL:4,knR:4,shL:2,shR:2,elL:6,elR:6},
+            {hinge:3,py:96,thL:0,thR:0,knL:4,knR:4,shL:-6,shR:-6,elL:134,elR:134}],
+  kb_twist:[{hinge:-36,py:40,zoom:1.12,oy:10,thL:-122,thR:-122,knL:78,knR:78,shL:-46,shR:-46,elL:92,elR:92,twist:-30},
+            {hinge:-36,py:40,zoom:1.12,oy:10,thL:-122,thR:-122,knL:78,knR:78,shL:-46,shR:-46,elL:92,elR:92,twist:30}],
 };
+/* base camera angle per move; the view sweeps gently either side of it */
+const VIEW={kb_swing:32,kb_squat:36,kb_floor:96,kb_row:40,kb_lunge:34,kb_press:38,kb_curl:34,kb_twist:76};
+const REP_LABELS={
+  kb_swing:["Hinge back","Drive tall"], kb_squat:["Stand tall","Sit deep"],
+  kb_floor:["Elbow down","Press up"],   kb_row:["Arm long","Pull to hip"],
+  kb_lunge:["Stand","Step back"],       kb_press:["Racked","Locked out"],
+  kb_curl:["Arms long","Curl up"],      kb_twist:["Bell left","Bell right"],
+};
+function fullPose(p){return{...POSE_DEFAULTS,...p}}
+function lerpPose(a,b,t){const o={};for(const k in a)o[k]=typeof a[k]==="number"?a[k]+(b[k]-a[k])*t:a[k];return o}
 
-let kbFrame=0;
+/* project a joint to the 2D viewBox, with gentle depth scaling */
+function project(v,ang,z,oy){
+  const r=rotY(v,ang);
+  const k=250/(250-r.z*0.55)*z;
+  return{x:50+r.x*0.44*k, y:99-oy-r.y*0.44*k, d:r.z};
+}
+function figureSvg(id,t,ang){
+  const fr=RIG[id]; if(!fr)return"";
+  const p=fullPose(lerpPose(fullPose(fr[0]),fullPose(fr[1]),t));
+  const J=skeleton(p);
+  const P={}; for(const k in J)P[k]=project(J[k],ang,p.zoom,p.oy);
+  const parts=[];
+  BONES.forEach(([a,b,w])=>{
+    const A=P[a],B=P[b],d=(A.d+B.d)/2;
+    const sw=w*(250/(250-d*0.55))*0.46*p.zoom;
+    parts.push({d,s:`<line class="bn" x1="${A.x.toFixed(1)}" y1="${A.y.toFixed(1)}" x2="${B.x.toFixed(1)}" y2="${B.y.toFixed(1)}" stroke-width="${sw.toFixed(2)}"/>`});
+  });
+  const H=P.head, hr=9*(250/(250-H.d*0.55))*0.46*p.zoom;
+  parts.push({d:H.d,s:`<circle class="hd" cx="${H.x.toFixed(1)}" cy="${H.y.toFixed(1)}" r="${hr.toFixed(2)}"/>`});
+  // kettlebell rides in the working hand(s)
+  const mode=p.bell, hands=mode==="R"?[P.handR]:mode==="L"?[P.handL]:[P.handL,P.handR];
+  const bx=hands.reduce((s,h)=>s+h.x,0)/hands.length;
+  const by=hands.reduce((s,h)=>s+h.y,0)/hands.length;
+  const bd=hands.reduce((s,h)=>s+h.d,0)/hands.length;
+  const br=6.4*(250/(250-bd*0.55))*0.46*p.zoom;
+  parts.push({d:bd+1,s:`<g class="bell"><circle cx="${bx.toFixed(1)}" cy="${(by+br*0.5).toFixed(1)}" r="${br.toFixed(2)}"/>`+
+    `<path d="M${(bx-br*0.7).toFixed(1)} ${(by+br*0.1).toFixed(1)} q${(br*0.7).toFixed(1)} ${(-br*0.9).toFixed(1)} ${(br*1.4).toFixed(1)} 0" stroke-width="${(br*0.42).toFixed(2)}"/></g>`});
+  parts.sort((a,b)=>a.d-b.d);                    // draw far bones first
+  const floor=p.oy?"":`<ellipse class="gnd" cx="50" cy="97" rx="26" ry="3.4"/>`;
+  return floor+parts.map(p=>p.s).join("");
+}
+
+/* animation loop: rep phase + slowly orbiting camera, draggable */
+let repT=0, camA=22, camDrag=0, dragging=false, lastTs=0, poseEx=null;
 function poseSvg(id){
-  const fr=POSES[id]||[];
-  return `<div class="pose-wrap" id="poseWrap" data-labels="${fr.map(f=>f.l).join("|")}">
-    <svg class="pose" viewBox="0 0 100 100">
-      ${fr.map((f,i)=>`<g class="frame${i===0?" on":""}">${f.s}</g>`).join("")}
-    </svg>
-    <div class="pose-step" id="poseStep">${fr.length?"1 · "+fr[0].l:""}</div>
+  poseEx=id;
+  const labs=REP_LABELS[id]||["",""];
+  return `<div class="pose-wrap" id="poseWrap" data-ex="${id}" data-labels="${labs.join("|")}">
+    <svg class="pose" id="poseSvg" viewBox="0 0 100 100">${figureSvg(id,0,camA*D)}</svg>
+    <div class="pose-step" id="poseStep">${labs[0]}</div>
+    <div class="pose-hint">drag to turn</div>
   </div>`;
 }
-/* advance the demonstration loop independently of the countdown */
 function paintFrames(){
-  const wrap=el("poseWrap");if(!wrap)return;
-  const frames=wrap.querySelectorAll(".frame");if(!frames.length)return;
-  const i=kbFrame%frames.length;
-  frames.forEach((f,n)=>f.classList.toggle("on",n===i));
-  const labs=(wrap.dataset.labels||"").split("|");
+  const svg=el("poseSvg"); if(!svg)return;
+  const id=el("poseWrap")?.dataset.ex; if(!id||!RIG[id])return;
+  svg.innerHTML=figureSvg(id,repT,(camA+camDrag)*D);
+  const labs=(el("poseWrap").dataset.labels||"").split("|");
   const step=el("poseStep");
-  if(step)step.textContent=(i+1)+" · "+(labs[i]||"");
+  if(step)step.textContent=repT<0.5?labs[0]:labs[1];
 }
-setInterval(()=>{kbFrame++;paintFrames()},950);
+function poseTick(ts){
+  requestAnimationFrame(poseTick);
+  const wrap=el("poseWrap"); if(!wrap)return;
+  lastTs=ts;
+  const phase=(ts%2600)/2600;                    // ~2.6s per rep
+  repT=0.5-0.5*Math.cos(phase*2*Math.PI);        // ease down and back
+  const base=VIEW[wrap.dataset.ex]??34;
+  camA=base+30*Math.sin(ts/4300);                // sweep three-quarter → side
+  paintFrames();
+}
+requestAnimationFrame(poseTick);
+/* drag to look around */
+document.addEventListener("pointerdown",e=>{
+  if(!e.target.closest("#poseWrap"))return;
+  dragging=true; e.target.setPointerCapture?.(e.pointerId); poseTick._x=e.clientX;
+});
+document.addEventListener("pointermove",e=>{if(dragging){camDrag+=(e.clientX-poseTick._x)*0.6;poseTick._x=e.clientX;}});
+document.addEventListener("pointerup",()=>{dragging=false});
 
 /* muscle label → regions on the body diagram */
 const MUSCLE_MAP={
