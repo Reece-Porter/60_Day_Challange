@@ -740,6 +740,29 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
 .trans-act{display:flex;gap:9px;margin-top:16px}
 .trans-act .btn{flex:1}
 
+
+.q{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;
+  border:1px solid currentColor;font-size:11px;font-weight:800;font-style:italic;
+  font-family:Georgia,serif;margin-right:7px;vertical-align:-3px}
+.fp-mac{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:6px}
+.fp-mac div{background:var(--card-2);border:1px solid var(--line);border-radius:var(--r-sm);
+  padding:9px 4px;text-align:center}
+.fp-mac span{display:block;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)}
+.fp-mac b{display:block;font-size:14px;font-weight:800;margin-top:3px}
+.fp-mac i{display:block;font-style:normal;font-size:10px;font-weight:700;color:var(--text-3);margin-top:2px}
+.fp-m{border-top:1px solid var(--line);padding:14px 0 4px;margin-top:4px}
+.fp-h{display:flex;justify-content:space-between;align-items:baseline}
+.fp-n{font-size:13.5px;font-weight:800}
+.fp-k{font-size:11px;font-weight:800;color:var(--accent)}
+.fp-t{font-size:11px;color:var(--text-3);margin:5px 0 9px;line-height:1.6;font-weight:500}
+.fp-t b{color:var(--text-2);font-weight:800}
+.fp-i{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:12.5px}
+.fp-i span{color:var(--text-2);font-weight:600}
+.fp-i b{font-weight:800;white-space:nowrap}
+.fp-i b.fp-note{font-weight:600;color:var(--text-3);font-size:11px;text-align:right;white-space:normal}
+.fp-foot{margin-top:16px;padding-top:14px;border-top:1px solid var(--line);
+  font-size:11.5px;color:var(--text-3);font-weight:600;line-height:1.6}
+
 /* ═══════════════════════════════════════════════════════
    NAV
    ═══════════════════════════════════════════════════════ */
@@ -894,6 +917,17 @@ select.input{appearance:none;cursor:pointer;padding-right:32px;
       <div class="field"><label>Finish</label><input class="input" type="date" id="chTarget"></div>
       <button class="btn btn-primary btn-block" id="chSave">Start the clock</button>
     </div>
+  </div>
+</div>
+
+<div class="modal hidden" id="foodInfoModal">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>The food plan</h3>
+      <p id="foodInfoSub">The four meals as the plan has them, before any edits you make on the day.</p>
+    </div>
+    <div class="modal-body modal-scroll" id="foodInfoBody"></div>
+    <div class="modal-foot"><button class="btn btn-ghost btn-block" id="foodInfoClose">Close</button></div>
   </div>
 </div>
 
@@ -3178,6 +3212,11 @@ function foodView(){
       <div class="mini-lab" style="margin-top:0">Every day</div>
       ${ex.map(e=>taskHtml("x_"+e.id,e.name,e.note)).join("")}
     </div>
+    <div class="card-body" style="border-top:1px solid var(--line)">
+      <button class="btn btn-ghost btn-block btn-sm" id="foodInfo">
+        <span class="q">?</span> See the food plan
+      </button>
+    </div>
   </section>
 
   <section class="card">
@@ -3415,6 +3454,46 @@ function refreshProgress(){
 
 
 
+
+/* the plan as written, so you can see it even on a day you have edited */
+function openFoodInfo(){
+  const d=viewDate, m=macrosAt(d), P=currentPlan(d), t=mealTotals(P);
+  const p=planAt(d);
+  const sub=el("foodInfoSub");
+  if(sub)sub.textContent=m
+    ? `${p.phase.short} · ${p.phase.name} — ${m.kcal.toLocaleString()} kcal, ${m.protein}g protein. `+
+      `The four meals as the plan has them, before any edits you make on the day.`
+    : "The four meals as the plan has them.";
+  const v=(got,want)=>{const x=Math.round((got-want)*10)/10;return (x>0?"+":"")+x};
+  el("foodInfoBody").innerHTML=`
+    ${m?`<div class="fp-mac">
+      <div><span>kcal</span><b>${Math.round(t.kcal)}</b><i>${v(t.kcal,m.kcal)}</i></div>
+      <div><span>protein</span><b>${Math.round(t.p)}g</b><i>${v(t.p,m.protein)}</i></div>
+      <div><span>fat</span><b>${Math.round(t.f)}g</b><i>${v(t.f,m.fat)}</i></div>
+      <div><span>carbs</span><b>${Math.round(t.c)}g</b><i>${v(t.c,m.carbs)}</i></div>
+    </div>`:""}
+    ${MEALS.map(ml=>{
+      const items=Object.entries(P[ml.id]||{}).filter(([,q])=>q>0);
+      const mt=mealTotals({x:P[ml.id]||{}});
+      return `<div class="fp-m">
+        <div class="fp-h"><span class="fp-n">Meal ${ml.n}</span>
+          <span class="fp-k">${Math.round(mt.kcal)} kcal</span></div>
+        <div class="fp-t"><b>Day shift or off</b> ${esc(ml.day)} · <b>Night shift</b> ${esc(ml.night)}</div>
+        ${items.map(([k,q])=>`<div class="fp-i"><span>${esc(FOODS[k].name)}</span>
+          <b>${FOODS[k].each?q+(q===1?" egg":" eggs"):q+FOODS[k].unit}</b></div>`).join("")}
+      </div>`;
+    }).join("")}
+    <div class="fp-m">
+      <div class="fp-h"><span class="fp-n">Every day</span></div>
+      ${EXTRAS.map(e=>`<div class="fp-i"><span>${esc(e.name)}</span>
+        <b class="fp-note">${esc(e.note)}</b></div>`).join("")}
+    </div>
+    <div class="fp-foot">£${t.cost.toFixed(2)} a day · £${(t.cost*7).toFixed(2)} a week at your prices.
+      ${isEdited()?"You have edited today's portions — these are the plan's, not yours.":""}</div>`;
+  el("foodInfoModal").classList.remove("hidden");
+}
+function closeFoodInfo(){el("foodInfoModal").classList.add("hidden")}
+
 /* ── food wiring ── */
 function wireFood(){
   document.querySelectorAll(".fi-q[data-meal]").forEach(n=>n.addEventListener("change",async()=>{
@@ -3431,6 +3510,7 @@ function wireFood(){
     if(isFinite(v)&&v>0)priceOverride[n.dataset.price]=v; else delete priceOverride[n.dataset.price];
     await save("priceOverride",priceOverride); render();
   }));
+  el("foodInfo")?.addEventListener("click",openFoodInfo);
   el("mealReset")?.addEventListener("click",async()=>{
     dayMeals=null; await save(mealsKey(viewKey),null);
     toast("Back on the plan"); render();
@@ -3615,9 +3695,11 @@ function openChallengeSetup(){
   el("chTarget").value=DEF_TARGET;
   el("challengeModal").classList.remove("hidden");
 }
+el("foodInfoClose").addEventListener("click",closeFoodInfo);
+el("foodInfoModal").addEventListener("click",e=>{if(e.target===el("foodInfoModal"))closeFoodInfo()});
 el("kbInfoClose").addEventListener("click",closeKbInfo);
 el("kbInfoModal").addEventListener("click",e=>{if(e.target===el("kbInfoModal"))closeKbInfo()});
-document.addEventListener("keydown",e=>{if(e.key==="Escape")closeKbInfo()});
+document.addEventListener("keydown",e=>{if(e.key==="Escape"){closeKbInfo();closeFoodInfo()}});
 
 el("chSave").addEventListener("click",()=>{
   const s=el("chStart").value,t=el("chTarget").value;
